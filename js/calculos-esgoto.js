@@ -1,143 +1,139 @@
 // Cálculos de Esgotamento Sanitário — NBR 9649
 
 function calcularVazaoEsgoto() {
-  const hab    = parseFloat(document.getElementById('esg-habitantes').value);
-  const qpc    = parseFloat(document.getElementById('esg-consumo').value);
-  const c1     = parseFloat(document.getElementById('esg-coef-retorno').value) / 100;
-  const k1     = parseFloat(document.getElementById('esg-k1').value);
-  const k2     = parseFloat(document.getElementById('esg-k2').value);
+  const habitantes  = parseFloat(document.getElementById('esg-habitantes').value);
+  const consumo     = parseFloat(document.getElementById('esg-consumo').value);
+  const retorno     = parseFloat(document.getElementById('esg-coef-retorno').value) / 100;
+  const K1          = parseFloat(document.getElementById('esg-k1').value);
+  const K2          = parseFloat(document.getElementById('esg-k2').value);
 
   const el = document.getElementById('resultado-vazao-esgoto');
 
-  if (!hab || !qpc || hab <= 0 || qpc <= 0) {
-    mostrarErro(el, 'Preencha todos os campos com valores válidos.');
+  if (!habitantes || !consumo || !retorno || !K1 || !K2 ||
+      habitantes <= 0 || consumo <= 0 || retorno <= 0 || K1 <= 0 || K2 <= 0) {
+    mostrarErro(el, 'Preencha todos os campos com valores positivos.');
     return;
   }
 
-  // Q médio = hab × qpc × C1 / 86400  (L/s)
-  const qMedio = (hab * qpc * c1) / 86400;
-  // Q máximo = Q_med × K1 × K2
-  const qMax   = qMedio * k1 * k2;
-  // Q mínimo = Q_med × K1 / K2  (aproximação NBR 9649)
-  const qMin   = qMedio * k1 / k2;
+  // Vazão média de esgoto (L/s)
+  // Qmed = (habitantes × consumo_per_capita × C1) / 86400
+  const Qmed = (habitantes * consumo * retorno) / 86400;  // L/s
+
+  // Vazão de contribuição de infiltração (NBR 9649: 0,05 L/s por km de rede por mm de DN)
+  // Adota-se valor típico de 0,0001 L/s por habitante para estimativa simplificada
+  const Qinf = habitantes * 0.0001;  // L/s (estimativa)
+
+  // Vazão máxima de projeto
+  const Qmax = Qmed * K1 * K2 + Qinf;  // L/s
+
+  // Vazão mínima (NBR 9649: 1,5 L/s mínimo para ramais prediais)
+  const Qmin = Math.max(Qmax * 0.2, 1.5);  // L/s
 
   el.className = 'resultado resultado-ok';
   el.innerHTML = `
     <h4>Resultados — Vazão de Esgoto</h4>
     <div class="result-main">
-      <div><div class="label">Vazão máxima de projeto</div><div class="value">${qMax.toFixed(4)} L/s</div></div>
-      <span class="result-badge ok">&#10003; Calculado</span>
+      <div><div class="label">Vazão máxima de projeto</div><div class="value">${fmt(Qmax)} L/s</div></div>
+      <span class="result-badge ok">&#10003; NBR 9649</span>
     </div>
     <table class="result-table">
-      <tr><td>Habitantes</td><td>${hab} hab</td></tr>
-      <tr><td>Contribuição per capita de água</td><td>${qpc} L/hab·dia</td></tr>
-      <tr><td>Coeficiente de retorno C1</td><td>${(c1*100).toFixed(0)} %</td></tr>
-      <tr><td>K1 (variação diária)</td><td>${k1}</td></tr>
-      <tr><td>K2 (variação horária)</td><td>${k2}</td></tr>
-      <tr><td>Vazão média de esgoto Q_med</td><td>${qMedio.toFixed(5)} L/s</td></tr>
-      <tr><td>Vazão mínima Q_min</td><td>${qMin.toFixed(5)} L/s</td></tr>
-      <tr><td>Vazão máxima de projeto Q_max</td><td><strong>${qMax.toFixed(5)} L/s</strong></td></tr>
-    </table>`;
+      <tr><td>Número de habitantes</td><td>${habitantes} hab</td></tr>
+      <tr><td>Consumo per capita de água</td><td>${consumo} L/hab·dia</td></tr>
+      <tr><td>Coeficiente de retorno C1</td><td>${(retorno * 100).toFixed(0)}%</td></tr>
+      <tr><td>Coef. variação diária K1</td><td>${K1}</td></tr>
+      <tr><td>Coef. variação horária K2</td><td>${K2}</td></tr>
+      <tr><td>Vazão média de esgoto</td><td>${Qmed.toFixed(4)} L/s</td></tr>
+      <tr><td>Vazão de infiltração estimada</td><td>${Qinf.toFixed(4)} L/s</td></tr>
+      <tr><td>Vazão máxima (K1 × K2 + Qinf)</td><td><strong>${fmt(Qmax)} L/s</strong></td></tr>
+      <tr><td>Vazão mínima adotada</td><td>${fmt(Qmin)} L/s</td></tr>
+    </table>
+    <p class="status-msg">&#9432; Vazão de projeto = Qméd × K1 × K2 + Qinf (NBR 9649 §6.3).</p>`;
 }
 
 function calcularManning() {
-  const Q    = parseFloat(document.getElementById('mn-vazao').value);         // L/s
-  const I    = parseFloat(document.getElementById('mn-declividade').value);   // m/m
-  const n    = parseFloat(document.getElementById('mn-n').value);
-  const lam  = parseFloat(document.getElementById('mn-lam-max').value);       // fração de D
+  const Q  = parseFloat(document.getElementById('mn-vazao').value);         // L/s
+  const I  = parseFloat(document.getElementById('mn-declividade').value);   // m/m
+  const n  = parseFloat(document.getElementById('mn-n').value);
+  const yl = parseFloat(document.getElementById('mn-lam-max').value);        // fração de D
 
   const el = document.getElementById('resultado-manning');
 
-  if (!Q || !I || Q <= 0 || I <= 0) {
+  if (!Q || !I || !n || Q <= 0 || I <= 0 || n <= 0) {
     mostrarErro(el, 'Preencha todos os campos com valores positivos.');
     return;
   }
 
-  // Manning para tubo circular cheio: Q = (1/n) × A × R^(2/3) × I^(1/2)
-  // Tubo cheio: A = π·D²/4, R = D/4
-  // Q = (1/n) × (π·D²/4) × (D/4)^(2/3) × I^(1/2)
-  // Isolando D:
-  // D = [ Q × n / (0,3117 × I^0.5) ]^(3/8)    (Q em m³/s, D em m)
-  const Qm3s = Q / 1000;
-  // Correção para lâmina < 1 (lam < 100% D): aumenta D pelo fator empírico
-  // Solução iterativa simples: calcular D para tubo cheio e depois verificar
-  const Dcheio = Math.pow((Qm3s * n) / (0.3117 * Math.sqrt(I)), 3 / 8);
+  // Fórmula de Manning para seção circular em regime de lâmina parcial
+  // Para seção plena: Q = (1/n) × A × R^(2/3) × I^(1/2)
+  // Para seção circular plena: A = π×D²/4, R = D/4
+  // Q_plena = (1/n) × (π×D²/4) × (D/4)^(2/3) × I^(1/2)
+  //
+  // A NBR 9649 admite lâmina máxima de 0,75D.
+  // Para y/D = 0,75: Q_lam / Q_plena ≈ 0,967 (tabela hidráulica)
+  // Portanto: Q_proj = Q_lam = Q, e Q_plena = Q / 0,967
+  //
+  // Resolvendo para D (seção plena):
+  // Q_plena = (1/n) × (π/4) × D^(8/3) / 4^(2/3) × I^(1/2)
+  // D^(8/3) = Q_plena × n × 4^(2/3) / ((π/4) × I^(1/2))
+  // D = [Q_plena × n × 4^(2/3) / ((π/4) × I^(1/2))]^(3/8)
 
-  // Para lâmina parcial, usar fator de correção iterativo
-  // Usar a relação: Q_parcial / Q_cheio = f(y/D)
-  // Aproximação: Q @ lam·D ≈ Q_cheio × phi(lam)
-  // phi(0.75) ≈ 0.919, phi(0.80) ≈ 0.952, phi(0.50) ≈ 0.500
-  const phi = calcularPhiManning(lam);
-  // D necessário para que Q_cheio × phi = Q_projeto
-  const Qcheio = Qm3s / phi;
-  const D = Math.pow((Qcheio * n) / (0.3117 * Math.sqrt(I)), 3 / 8);
-  const Dmm = D * 1000;
+  // Relação Q_lam/Q_plena para y/D (tabela hidráulica aproximada por interpolação)
+  const ratioQ = relacaoQManning(yl);
 
-  // Diâmetros nominais de esgoto (mm)
-  const dnList = [100, 150, 200, 250, 300, 350, 400, 450, 500, 600, 700, 800, 900, 1000];
-  const DN = dnList.find(d => d >= Dmm) || dnList[dnList.length - 1];
+  const Qm3s       = Q / 1000;             // m³/s
+  const Q_plena    = Qm3s / ratioQ;        // m³/s (seção plena equivalente)
 
-  // Calcular velocidade no tubo escolhido (lâmina máx)
-  const Dn = DN / 1000;
-  const Qcheio_dn = (1 / n) * (Math.PI * Dn * Dn / 4) * Math.pow(Dn / 4, 2 / 3) * Math.sqrt(I);
-  const lamY = (Qm3s / Qcheio_dn);   // razão Q/Qcheio
-  const V_lam = calcularVelocidadeManning(lamY, n, Dn, I);
+  const D_calc = Math.pow(
+    (Q_plena * n * Math.pow(4, 2/3)) / ((Math.PI / 4) * Math.pow(I, 0.5)),
+    3 / 8
+  );  // m
+  const D_mm = D_calc * 1000;
 
-  const vOk = V_lam >= 0.6 && V_lam <= 5.0;
+  // Diâmetros comerciais de esgoto (NBR — PVC/concreto)
+  const diametros = [100, 150, 200, 250, 300, 350, 400, 500, 600, 700, 800];
+  const DN = diametros.find(d => d >= D_mm) || diametros[diametros.length - 1];
 
-  el.className = `resultado resultado-${vOk ? 'ok' : 'aviso'}`;
+  // Verificação da velocidade com DN adotado (seção plena)
+  const D_adot = DN / 1000;
+  const A_plena = Math.PI * D_adot * D_adot / 4;
+  const R_plena = D_adot / 4;
+  const V_plena = (1 / n) * Math.pow(R_plena, 2/3) * Math.pow(I, 0.5);  // m/s
+
+  // Velocidade na lâmina máxima (aproximação: V_lam ≈ V_plena × 1.08 para y/D=0,75)
+  const ratioV  = relacaoVManning(yl);
+  const V_lam   = V_plena * ratioV;
+
+  // Critérios NBR 9649: Vmin = 0,6 m/s; Vmax = 5,0 m/s
+  let status = 'ok', msgs = [];
+  if (V_lam < 0.6) { status = 'aviso'; msgs.push('&#9888; Velocidade na lâmina ('+V_lam.toFixed(2)+' m/s) abaixo de 0,6 m/s — risco de deposição (NBR 9649 §5.2).'); }
+  if (V_lam > 5.0) { status = 'erro';  msgs.push('&#9888; Velocidade na lâmina ('+V_lam.toFixed(2)+' m/s) acima de 5,0 m/s — risco de erosão (NBR 9649 §5.2).'); }
+  if (msgs.length === 0) msgs.push('&#10003; Velocidade dentro dos limites NBR 9649 (0,6 – 5,0 m/s).');
+
+  el.className = `resultado resultado-${status}`;
   el.innerHTML = `
-    <h4>Resultados — Manning (Esgoto)</h4>
+    <h4>Resultados — Manning (NBR 9649)</h4>
     <div class="result-main">
-      <div><div class="label">Diâmetro nominal adotado</div><div class="value">DN ${DN} mm</div></div>
-      <span class="result-badge ${vOk ? 'ok' : 'aviso'}">${vOk ? '&#10003; OK' : '&#9888; Verificar velocidade'}</span>
+      <div><div class="label">Diâmetro calculado</div><div class="value">${D_mm.toFixed(1)} mm</div></div>
+      <div><div class="label">DN comercial adotado</div><div class="value">DN ${DN} mm</div></div>
     </div>
     <table class="result-table">
       <tr><td>Vazão de projeto Q</td><td>${Q} L/s</td></tr>
-      <tr><td>Declividade I</td><td>${(I*1000).toFixed(2)} ‰ (${I} m/m)</td></tr>
-      <tr><td>Coef. rugosidade n (Manning)</td><td>${n}</td></tr>
-      <tr><td>Lâmina máxima admitida</td><td>${(lam*100).toFixed(0)} %·D</td></tr>
-      <tr><td>Diâmetro teórico necessário</td><td>${Dmm.toFixed(1)} mm</td></tr>
-      <tr><td>Diâmetro nominal adotado</td><td><strong>DN ${DN} mm</strong></td></tr>
-      <tr><td>Velocidade estimada na lâmina máx</td><td>${V_lam.toFixed(3)} m/s ${vOk ? '' : '⚠ fora do limite'}</td></tr>
+      <tr><td>Declividade I</td><td>${I} m/m (${(I*1000).toFixed(2)} ‰)</td></tr>
+      <tr><td>Coeficiente n (Manning)</td><td>${n}</td></tr>
+      <tr><td>Lâmina máxima adotada</td><td>${(yl*100).toFixed(0)}% de D</td></tr>
+      <tr><td>Relação Q_lam / Q_plena</td><td>${ratioQ.toFixed(3)}</td></tr>
+      <tr><td>Diâmetro mínimo calculado</td><td>${D_mm.toFixed(2)} mm</td></tr>
+      <tr><td>DN comercial adotado</td><td><strong>DN ${DN} mm</strong></td></tr>
+      <tr><td>Velocidade a seção plena</td><td>${V_plena.toFixed(3)} m/s</td></tr>
+      <tr><td>Velocidade na lâmina (${(yl*100).toFixed(0)}%D)</td><td><strong>${V_lam.toFixed(3)} m/s</strong></td></tr>
     </table>
-    <p class="status-msg">NBR 9649: V_min = 0,6 m/s | V_max = 5,0 m/s | Lâmina máx = 75 % D</p>`;
-}
-
-function calcularPhiManning(lam) {
-  // Razão Q_parcial / Q_cheio para seção circular usando equação de Manning
-  // phi = (A_p/A_c) × (R_p/R_c)^(2/3)
-  const theta = 2 * Math.acos(1 - 2 * lam);     // ângulo central (rad)
-  const Ap_Ac = (theta - Math.sin(theta)) / (2 * Math.PI);
-  const Rp_Rc = (1 - Math.sin(theta) / theta);
-  return Ap_Ac * Math.pow(Rp_Rc, 2 / 3);
-}
-
-function calcularVelocidadeManning(qRatio, n, D, I) {
-  // Velocidade para seção parcialmente cheia
-  // V = (1/n) × R^(2/3) × I^(1/2) onde R = A/P
-  // Usando qRatio = Q/Q_cheio → obter theta pela bisseção
-  const theta = biseccaoTheta(qRatio);
-  const A = (D * D / 8) * (theta - Math.sin(theta));
-  const P = D * theta / 2;
-  const R = A / P;
-  return (1 / n) * Math.pow(R, 2 / 3) * Math.sqrt(I);
-}
-
-function biseccaoTheta(qRatio) {
-  let lo = 0.01, hi = 2 * Math.PI - 0.01;
-  for (let i = 0; i < 50; i++) {
-    const mid = (lo + hi) / 2;
-    const f = (mid - Math.sin(mid)) / (2 * Math.PI);
-    if (f < qRatio) lo = mid; else hi = mid;
-  }
-  return (lo + hi) / 2;
+    <p class="status-msg">${msgs.join('<br>')}</p>`;
 }
 
 function calcularDeclividade() {
-  const DN    = parseFloat(document.getElementById('dc-diametro').value);  // mm
+  const DN    = parseFloat(document.getElementById('dc-diametro').value);   // mm
   const n     = parseFloat(document.getElementById('dc-n').value);
-  const Q     = parseFloat(document.getElementById('dc-vazao').value);     // L/s
+  const Q     = parseFloat(document.getElementById('dc-vazao').value);       // L/s
 
   const el = document.getElementById('resultado-declividade');
 
@@ -147,42 +143,103 @@ function calcularDeclividade() {
   }
 
   const D = DN / 1000;  // m
+
+  // NBR 9649 — Declividade mínima: Imin = 0,0055 × D^(-0,467) (m/m)
+  const Imin_formula = 0.0055 * Math.pow(D, -0.467);  // m/m
+
+  // Alternativa: declividade mínima que garante V >= 0,6 m/s (seção plena)
+  // V = (1/n) × R^(2/3) × I^(1/2) → I = (V × n / R^(2/3))^2
+  const R = D / 4;
+  const Imin_v06 = Math.pow((0.6 * n) / Math.pow(R, 2/3), 2);  // m/m
+
+  const Imin = Math.max(Imin_formula, Imin_v06);
+
+  // Velocidade a seção plena com declividade mínima adotada
+  const A_plena = Math.PI * D * D / 4;
+  const V_plena_min = (1 / n) * Math.pow(R, 2/3) * Math.pow(Imin, 0.5);
+
+  // Velocidade de projeto (lâmina 75%D, relação aprox. 1,08)
+  const yl_75 = 0.75;
+  const ratioV_75 = relacaoVManning(yl_75);
+  const V_lam_min  = V_plena_min * ratioV_75;
+
+  // Velocidade com Q de projeto (verificação)
   const Qm3s = Q / 1000;
+  const Q_plena_proj = Qm3s / relacaoQManning(yl_75);
 
-  // Declividade mínima NBR 9649: Imin = 0.0055 × Qmin^(-0.47)  (Qmin em L/s, com Q mín ≈ 1,5 L/s se Q > 1,5)
-  // Fórmula direta NBR 9649: Imin (‰) = 0,55 / D^(5/3) × Q^(-0,47) — usando D em m, Q em L/s
-  // Simplificação comum: Imin (m/m) = 0,0055 × Q^-0,47   para Q em L/s
-  const Qmin_ref = Math.max(Q, 1.5);
-  const Imin = 0.0055 * Math.pow(Qmin_ref, -0.47);
+  // Verifica se Q cabe no tubo com a declividade mínima
+  const Q_plena_cap = A_plena * (1/n) * Math.pow(R, 2/3) * Math.pow(Imin, 0.5);
+  const Q_75_cap    = Q_plena_cap * relacaoQManning(yl_75);
 
-  // Verificar velocidade a 50% D (Manning — lâmina 50%)
-  const lam50 = 0.50;
-  const phi50 = calcularPhiManning(lam50);
-  const Qcheio = Qm3s / phi50;
-  const I_necessaria = Math.pow(Qcheio * n / (0.3117 * Math.pow(D, 8/3)), 2);
+  let statusCap = 'ok', msgCap = '';
+  if (Q > Q_75_cap * 1000) {
+    statusCap = 'erro';
+    msgCap = `&#9888; Tubulação DN ${DN} mm com declividade mínima não comporta a vazão de projeto (capacidade = ${fmt(Q_75_cap * 1000)} L/s). Aumente o DN ou a declividade.`;
+  } else {
+    msgCap = `&#10003; DN ${DN} mm comporta até ${fmt(Q_75_cap * 1000)} L/s — capacidade suficiente para Q = ${fmt(Q)} L/s.`;
+  }
 
-  // Verificar velocidade mínima @ lâmina máx 75%
-  const Vcrit = (1 / n) * Math.pow(D / 4, 2 / 3) * Math.sqrt(Imin);  // velocidade à seção cheia com Imin
-  const Vtube = (1 / n) * Math.pow(D / 4, 2 / 3) * Math.sqrt(I_necessaria);
-
-  const IminPorMil = (Imin * 1000).toFixed(3);
-  const vOk = Vcrit >= 0.6;
-
-  el.className = `resultado resultado-${vOk ? 'ok' : 'aviso'}`;
+  el.className = `resultado resultado-${statusCap}`;
   el.innerHTML = `
-    <h4>Resultados — Declividade e Velocidades</h4>
+    <h4>Resultados — Declividade Mínima e Velocidades</h4>
     <div class="result-main">
-      <div><div class="label">Declividade mínima NBR 9649</div><div class="value">${IminPorMil} ‰</div></div>
-      <span class="result-badge ${vOk ? 'ok' : 'aviso'}">${vOk ? '&#10003; V_min OK' : '&#9888; Verificar V_min'}</span>
+      <div><div class="label">Declividade mínima</div><div class="value">${(Imin*1000).toFixed(2)} ‰</div></div>
+      <span class="result-badge ${statusCap === 'ok' ? 'ok' : 'erro'}">${statusCap === 'ok' ? '&#10003; OK' : '&#10007; Insuficiente'}</span>
     </div>
     <table class="result-table">
       <tr><td>Diâmetro nominal DN</td><td>${DN} mm</td></tr>
       <tr><td>Coeficiente n (Manning)</td><td>${n}</td></tr>
-      <tr><td>Vazão de projeto</td><td>${Q} L/s</td></tr>
-      <tr><td>Declividade mínima (NBR 9649)</td><td><strong>${Imin.toFixed(6)} m/m (${IminPorMil} ‰)</strong></td></tr>
-      <tr><td>Declividade necessária (Q = 50% D)</td><td>${(I_necessaria * 1000).toFixed(3)} ‰</td></tr>
-      <tr><td>Velocidade crítica (seção cheia, Imin)</td><td>${Vcrit.toFixed(3)} m/s ${vOk ? '&#10003;' : '&#9888;'}</td></tr>
-      <tr><td>Velocidade (decl. necessária)</td><td>${Vtube.toFixed(3)} m/s</td></tr>
+      <tr><td>Raio hidráulico (seção plena)</td><td>${(R*1000).toFixed(2)} mm</td></tr>
+      <tr><td>Declividade mínima — fórmula NBR 9649</td><td>${(Imin_formula*1000).toFixed(3)} ‰</td></tr>
+      <tr><td>Declividade mínima — V ≥ 0,6 m/s</td><td>${(Imin_v06*1000).toFixed(3)} ‰</td></tr>
+      <tr><td>Declividade mínima adotada</td><td><strong>${(Imin*1000).toFixed(3)} ‰ (${Imin.toFixed(6)} m/m)</strong></td></tr>
+      <tr><td>Velocidade seção plena (Imin)</td><td>${V_plena_min.toFixed(3)} m/s</td></tr>
+      <tr><td>Velocidade na lâmina 75%D</td><td>${V_lam_min.toFixed(3)} m/s</td></tr>
+      <tr><td>Capacidade máxima (lâmina 75%D)</td><td>${fmt(Q_75_cap * 1000)} L/s</td></tr>
+      <tr><td>Vazão de projeto</td><td>${fmt(Q)} L/s</td></tr>
     </table>
-    <p class="status-msg">NBR 9649: declividade mínima garante V ≥ 0,6 m/s para autolimpeza.</p>`;
+    <p class="status-msg">${msgCap}</p>
+    <p class="status-msg">Critérios NBR 9649: V<sub>min</sub> = 0,6 m/s; V<sub>máx</sub> = 5,0 m/s; lâmina máxima = 0,75D.</p>`;
+}
+
+/* ============================================================
+   Funções auxiliares — relações hidráulicas para seção circular
+   (baseadas nas tabelas de Chaudhry / Azevedo Netto)
+   ============================================================ */
+
+/**
+ * Relação Q_parcial / Q_plena em função de y/D para seção circular.
+ * Usa equações analíticas da geometria circular.
+ * @param {number} yl - lâmina relativa y/D (0 a 1)
+ * @returns {number}
+ */
+function relacaoQManning(yl) {
+  if (yl <= 0) return 0;
+  if (yl >= 1) return 1;
+  // Ângulo θ (radianos) correspondente à lâmina y = yl × D
+  // cos(θ/2) = 1 - 2×y/D  →  θ = 2 × acos(1 - 2×yl)
+  const theta = 2 * Math.acos(1 - 2 * yl);
+  // Área parcial: A = (D²/8)(θ - sinθ)
+  // Raio hidráulico: R = D/4 × (1 - sinθ/θ)
+  // Q_parc / Q_plena = (A_parc/A_plena) × (R_parc/R_plena)^(2/3)
+  const A_rel = (theta - Math.sin(theta)) / Math.PI;
+  const R_parc_rel = (1 - Math.sin(theta) / theta) / (1 / 1); // R_parc / (D/4)
+  // R_plena = D/4, R_parc = (D/4)(1 - sin(θ)/θ)
+  // R_parc/R_plena = 1 - sin(θ)/θ
+  const R_rel = 1 - Math.sin(theta) / theta;
+  return A_rel * Math.pow(R_rel, 2/3);
+}
+
+/**
+ * Relação V_parcial / V_plena em função de y/D para seção circular.
+ * @param {number} yl
+ * @returns {number}
+ */
+function relacaoVManning(yl) {
+  if (yl <= 0) return 0;
+  if (yl >= 1) return 1;
+  const theta = 2 * Math.acos(1 - 2 * yl);
+  // V_parc/V_plena = (R_parc/R_plena)^(2/3)
+  const R_rel = 1 - Math.sin(theta) / theta;
+  return Math.pow(R_rel, 2/3);
 }
