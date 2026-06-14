@@ -6,13 +6,20 @@
    Fonte: DAEE/IPT, CETESB, literatura técnica brasileira
    ============================================================ */
 const COEF_IDF = {
-  'sao-paulo':      { K: 1716.68, a: 0.165, b: 11,   c: 0.889 },
-  'rio-de-janeiro': { K: 3278.40, a: 0.179, b: 17,   c: 0.952 },
-  'belo-horizonte': { K: 1955.00, a: 0.197, b: 14,   c: 0.866 },
-  'curitiba':       { K: 1595.36, a: 0.160, b: 11.4, c: 0.854 },
-  'porto-alegre':   { K: 1472.00, a: 0.152, b: 10,   c: 0.851 },
-  'salvador':       { K: 2706.00, a: 0.164, b: 16,   c: 0.932 },
-  'recife':         { K: 3154.00, a: 0.175, b: 15,   c: 0.945 },
+  'sao-paulo':        { K: 1716.68, a: 0.165, b: 11,    c: 0.889 },
+  'rio-de-janeiro':   { K: 3278.40, a: 0.179, b: 17,    c: 0.952 },
+  'belo-horizonte':   { K: 1955.00, a: 0.197, b: 14,    c: 0.866 },
+  'curitiba':         { K: 1595.36, a: 0.160, b: 11.4,  c: 0.854 },
+  'porto-alegre':     { K: 1472.00, a: 0.152, b: 10,    c: 0.851 },
+  'salvador':         { K: 2706.00, a: 0.164, b: 16,    c: 0.932 },
+  'recife':           { K: 3154.00, a: 0.175, b: 15,    c: 0.945 },
+  // Santa Catarina — Fonte: EPAGRI/CIRAM, literatura técnica (Genovez & Zuffo, 2000)
+  'florianopolis':    { K: 1682.77, a: 0.170, b: 14.40, c: 0.882 },
+  'joinville':        { K: 2395.00, a: 0.178, b: 16.0,  c: 0.900 },
+  'blumenau':         { K: 2095.00, a: 0.163, b: 14.0,  c: 0.882 },
+  'chapeco':          { K: 1330.00, a: 0.161, b: 11.5,  c: 0.845 },
+  'criciuma':         { K: 1520.00, a: 0.157, b: 12.5,  c: 0.855 },
+  'itajai':           { K: 2200.00, a: 0.170, b: 15.0,  c: 0.890 },
 };
 
 function atualizarCoeficientesIDF() {
@@ -115,7 +122,10 @@ function calcularIntensidadeIDF() {
     'sao-paulo': 'São Paulo — SP', 'rio-de-janeiro': 'Rio de Janeiro — RJ',
     'belo-horizonte': 'Belo Horizonte — MG', 'curitiba': 'Curitiba — PR',
     'porto-alegre': 'Porto Alegre — RS', 'salvador': 'Salvador — BA',
-    'recife': 'Recife — PE'
+    'recife': 'Recife — PE',
+    'florianopolis': 'Florianópolis — SC', 'joinville': 'Joinville — SC',
+    'blumenau': 'Blumenau — SC', 'chapeco': 'Chapecó — SC',
+    'criciuma': 'Criciúma — SC', 'itajai': 'Itajaí — SC',
   };
 
   el.className = 'resultado resultado-ok';

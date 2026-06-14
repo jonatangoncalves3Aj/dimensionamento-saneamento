@@ -142,6 +142,9 @@ function cidadeNome(val) {
     'sao-paulo':'São Paulo','rio-de-janeiro':'Rio de Janeiro',
     'belo-horizonte':'Belo Horizonte','curitiba':'Curitiba',
     'porto-alegre':'Porto Alegre','salvador':'Salvador','recife':'Recife',
+    'florianopolis':'Florianópolis','joinville':'Joinville',
+    'blumenau':'Blumenau','chapeco':'Chapecó',
+    'criciuma':'Criciúma','itajai':'Itajaí',
   };
   return map[val] || val;
 }
