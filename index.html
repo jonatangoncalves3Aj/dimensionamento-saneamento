@@ -34,6 +34,8 @@
         <span class="badge">NBR 5626</span>
         <span class="badge">NBR 9649</span>
         <span class="badge">NBR 10844</span>
+        <span class="badge">NBR 7229</span>
+        <span class="badge">NBR 13969</span>
       </div>
     </div>
   </header>
@@ -55,6 +57,10 @@
     <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-drenagem" id="tab-drenagem" onclick="switchTab('drenagem')">
       <span class="tab-icon">&#127783;</span>
       Drenagem Pluvial
+    </button>
+    <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-fossa" id="tab-fossa" onclick="switchTab('fossa')">
+      <span class="tab-icon">&#9917;</span>
+      Fossa / Filtro / Sumidouro
     </button>
   </nav>
 
@@ -550,13 +556,219 @@
       </div>
     </section>
 
+    <!-- ======================== FOSSA / FILTRO / SUMIDOURO ======================== -->
+    <section class="panel" id="panel-fossa" role="tabpanel" aria-labelledby="tab-fossa">
+      <div class="panel-header">
+        <h2>Fossa Séptica, Filtro Anaeróbio e Sumidouro</h2>
+        <p class="panel-desc">Dimensionamento de sistemas de tratamento individual de esgoto — NBR 7229:2022 e NBR 13969:1997.</p>
+      </div>
+
+      <div class="calc-grid">
+
+        <!-- ── 1. FOSSA SÉPTICA ── -->
+        <div class="card">
+          <h3 class="card-title">
+            <span class="nbr-badge">NBR 7229</span>
+            Fossa Séptica
+          </h3>
+          <form id="form-fossa" onsubmit="return false;">
+            <div class="form-group">
+              <label for="fs-n">Número de habitantes (N)</label>
+              <input type="number" id="fs-n" min="1" value="5" placeholder="ex: 5" />
+            </div>
+            <div class="form-group">
+              <label for="fs-c">Contribuição per capita (C) — L/hab·dia</label>
+              <input type="number" id="fs-c" min="50" value="160" placeholder="ex: 160" />
+              <small class="hint">NBR 7229 Tabela 2: Residência = 160 L/hab·dia</small>
+            </div>
+            <div class="form-group">
+              <label for="fs-t">Tempo de detenção (T) — dias</label>
+              <input type="number" id="fs-t" step="0.1" min="0.5" value="1.0" placeholder="ex: 1.0" />
+              <small class="hint">NBR 7229 Tabela 3: mínimo 1,0 dia para ≤5 hab</small>
+            </div>
+            <div class="form-group">
+              <label for="fs-k">Intervalo entre limpezas (K)</label>
+              <select id="fs-k">
+                <option value="57">1 ano — K = 57 dias</option>
+                <option value="95" selected>2 anos — K = 95 dias</option>
+                <option value="132">3 anos — K = 132 dias</option>
+              </select>
+              <small class="hint">NBR 7229 Tabela 5 — taxa de acumulação de lodo</small>
+            </div>
+            <div class="form-group">
+              <label for="fs-lf">Contrib. de lodo fresco (Lf) — L/hab·dia</label>
+              <input type="number" id="fs-lf" step="0.1" min="0.5" value="1.0" placeholder="ex: 1.0" />
+              <small class="hint">NBR 7229: valor típico = 1,0 L/hab·dia</small>
+            </div>
+            <div class="form-group">
+              <label for="fs-h">Altura útil adotada (H) — m</label>
+              <input type="number" id="fs-h" step="0.1" min="1.0" value="1.5" placeholder="ex: 1.5" />
+              <small class="hint">NBR 7229: mínimo 1,20 m; recomendado 1,50 m</small>
+            </div>
+            <button class="btn-calc" onclick="calcularFossaSeptica()">Calcular fossa séptica</button>
+          </form>
+
+          <details class="explicacao">
+            <summary>&#9432; Fórmulas e dados de referência (NBR 7229)</summary>
+            <div class="explicacao-corpo">
+              <p><strong>Volume da fossa séptica:</strong></p>
+              <div class="formula-box">V = N × (C × T + K × Lf) / 1000 &nbsp;[m³]</div>
+              <table class="ref-table">
+                <tr><th>Variável</th><th>Descrição</th><th>Valor típico residencial</th></tr>
+                <tr><td>N</td><td>Número de pessoas</td><td>—</td></tr>
+                <tr><td>C</td><td>Contribuição per capita de esgoto (L/hab·dia)</td><td>160</td></tr>
+                <tr><td>T</td><td>Tempo de detenção (dias)</td><td>1,0 (≤5 hab)</td></tr>
+                <tr><td>K</td><td>Taxa de acumulação de lodo (dias)</td><td>57 / 95 / 132</td></tr>
+                <tr><td>Lf</td><td>Contribuição de lodo fresco (L/hab·dia)</td><td>1,0</td></tr>
+              </table>
+              <p><strong>Dimensões (câmara retangular):</strong></p>
+              <div class="formula-box">L = V / (B × H) &nbsp;&nbsp; B = L / 2 &nbsp;(proporção 1:2)</div>
+              <p><strong>Volume mínimo (NBR 7229 Tabela 4):</strong> 1.500 L para N ≤ 5 pessoas.</p>
+              <p><strong>Alturas mínimas:</strong> H_util ≥ 1,20 m; H_total = H_util + 0,30 m (borda livre).</p>
+            </div>
+          </details>
+
+          <div class="resultado" id="resultado-fossa"></div>
+        </div>
+
+        <!-- ── 2. FILTRO ANAERÓBIO ── -->
+        <div class="card">
+          <h3 class="card-title">
+            <span class="nbr-badge">NBR 7229</span>
+            Filtro Anaeróbio de Fluxo Ascendente
+          </h3>
+          <form id="form-filtro" onsubmit="return false;">
+            <div class="form-group">
+              <label for="fa-q">Vazão diária afluente (Q) — L/dia</label>
+              <input type="number" id="fa-q" min="10" value="800" placeholder="ex: 800" />
+              <small class="hint">Geralmente = N × C (saída da fossa séptica)</small>
+            </div>
+            <div class="form-group">
+              <label for="fa-tf">Tempo de detenção no filtro (Tf) — horas</label>
+              <input type="number" id="fa-tf" step="1" min="6" value="12" placeholder="ex: 12" />
+              <small class="hint">NBR 7229: mínimo 6 h; recomendado 12–18 h</small>
+            </div>
+            <div class="form-group">
+              <label for="fa-hmat">Altura do material filtrante (h_mat) — m</label>
+              <input type="number" id="fa-hmat" step="0.1" min="0.8" value="1.2" placeholder="ex: 1.2" />
+              <small class="hint">NBR 7229: mínimo 0,80 m; recomendado 1,20 m</small>
+            </div>
+            <div class="form-group">
+              <label for="fa-forma">Forma da seção transversal</label>
+              <select id="fa-forma">
+                <option value="circular">Circular</option>
+                <option value="retangular">Retangular (L = 2B)</option>
+              </select>
+            </div>
+            <button class="btn-calc" onclick="calcularFiltroAnaerobio()">Calcular filtro</button>
+          </form>
+
+          <details class="explicacao">
+            <summary>&#9432; Fórmulas e dados de referência (NBR 7229)</summary>
+            <div class="explicacao-corpo">
+              <p><strong>Volume útil do filtro:</strong></p>
+              <div class="formula-box">V_filtro = Q × Tf / 24 &nbsp;[m³] &nbsp;&nbsp;(Q em m³/dia)</div>
+              <p><strong>Área transversal:</strong></p>
+              <div class="formula-box">A = V_filtro / h_mat &nbsp;[m²]</div>
+              <p><strong>Dimensões (seção circular):</strong></p>
+              <div class="formula-box">D = √(4A / π) &nbsp;[m]</div>
+              <table class="ref-table">
+                <tr><th>Parâmetro</th><th>Valor mínimo</th><th>Recomendado</th></tr>
+                <tr><td>Tempo de detenção Tf</td><td>6 h</td><td>12–18 h</td></tr>
+                <tr><td>Altura do material filtrante</td><td>0,80 m</td><td>1,20 m</td></tr>
+                <tr><td>Borda livre acima do material</td><td>0,20 m</td><td>0,30 m</td></tr>
+                <tr><td>Câmara de entrada (abaixo)</td><td>0,20 m</td><td>0,30 m</td></tr>
+              </table>
+              <p><strong>Altura total:</strong> H_total = h_entrada + h_mat + h_borda ≈ h_mat + 0,60 m</p>
+              <p><strong>Material filtrante:</strong> pedra britada nº 4 ou nº 5 (brita grossa), com vazio ≥ 35%.</p>
+            </div>
+          </details>
+
+          <div class="resultado" id="resultado-filtro"></div>
+        </div>
+
+        <!-- ── 3. SUMIDOURO ── -->
+        <div class="card">
+          <h3 class="card-title">
+            <span class="nbr-badge">NBR 13969</span>
+            Sumidouro (Poço Absorvente)
+          </h3>
+          <form id="form-sumidouro" onsubmit="return false;">
+            <div class="form-group">
+              <label for="su-q">Vazão diária afluente (Q) — L/dia</label>
+              <input type="number" id="su-q" min="10" value="800" placeholder="ex: 800" />
+              <small class="hint">Vazão efluente do filtro anaeróbio</small>
+            </div>
+            <div class="form-group">
+              <label for="su-solo">Tipo de solo (taxa de infiltração)</label>
+              <select id="su-solo" onchange="atualizarTaxaInfiltracao()">
+                <option value="60">Areia grossa / pedregulho — 60 L/m²·dia</option>
+                <option value="40" selected>Areia fina / areia média — 40 L/m²·dia</option>
+                <option value="25">Areia argilosa / silte arenoso — 25 L/m²·dia</option>
+                <option value="15">Silte argiloso / argila arenosa — 15 L/m²·dia</option>
+                <option value="8">Argila / argila siltosa — 8 L/m²·dia</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="su-taxa">Taxa de infiltração (i) — L/m²·dia</label>
+              <input type="number" id="su-taxa" min="1" value="40" placeholder="ex: 40" />
+              <small class="hint">Ajuste conforme ensaio de percolação in loco (NBR 13969)</small>
+            </div>
+            <div class="form-group">
+              <label for="su-tipo">Tipo de sumidouro</label>
+              <select id="su-tipo">
+                <option value="poco">Poço absorvente (cilíndrico)</option>
+                <option value="vala">Vala de infiltração</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="su-d">Diâmetro do poço (D) — m <em>(para poço)</em></label>
+              <input type="number" id="su-d" step="0.1" min="1.0" value="1.5" placeholder="ex: 1.5" />
+              <small class="hint">NBR 13969: mínimo 1,0 m; recomendado 1,5 m</small>
+            </div>
+            <div class="form-group">
+              <label for="su-larg">Largura da vala (B) — m <em>(para vala)</em></label>
+              <input type="number" id="su-larg" step="0.1" min="0.4" value="0.6" placeholder="ex: 0.6" />
+              <small class="hint">NBR 13969: mínimo 0,40 m; recomendado 0,60 m</small>
+            </div>
+            <button class="btn-calc" onclick="calcularSumidouro()">Calcular sumidouro</button>
+          </form>
+
+          <details class="explicacao">
+            <summary>&#9432; Fórmulas e dados de referência (NBR 13969)</summary>
+            <div class="explicacao-corpo">
+              <p><strong>Área de infiltração necessária:</strong></p>
+              <div class="formula-box">A = Q / i &nbsp;[m²] &nbsp;&nbsp;(Q em L/dia, i em L/m²·dia)</div>
+              <p><strong>Poço absorvente (área lateral):</strong></p>
+              <div class="formula-box">A_lat = π × D × H &nbsp;→&nbsp; H = A / (π × D) &nbsp;[m]</div>
+              <p><strong>Vala de infiltração (área de fundo):</strong></p>
+              <div class="formula-box">A_fundo = B × L &nbsp;→&nbsp; L = A / B &nbsp;[m]</div>
+              <table class="ref-table">
+                <tr><th>Tipo de solo</th><th>Taxa i (L/m²·dia)</th></tr>
+                <tr><td>Areia grossa / pedregulho</td><td>60</td></tr>
+                <tr><td>Areia fina / areia média</td><td>40</td></tr>
+                <tr><td>Areia argilosa / silte arenoso</td><td>25</td></tr>
+                <tr><td>Silte argiloso / argila arenosa</td><td>15</td></tr>
+                <tr><td>Argila / argila siltosa</td><td>8</td></tr>
+              </table>
+              <p><strong>Distâncias mínimas (NBR 13969):</strong> 3 m de edificações, 15 m de poços d'água, 1,5 m do lençol freático.</p>
+              <p><strong>Profundidade máxima do poço:</strong> 3,0 m (NBR 13969 §6.2).</p>
+            </div>
+          </details>
+
+          <div class="resultado" id="resultado-sumidouro"></div>
+        </div>
+
+      </div><!-- .calc-grid -->
+    </section><!-- #panel-fossa -->
+
   </main>
 
   <!-- Footer -->
   <footer class="footer">
     <p>
       Dimensionamento de Saneamento &mdash; Ferramenta de Apoio à Engenharia Sanitária
-      &bull; Baseado nas normas <strong>NBR 5626</strong>, <strong>NBR 9649</strong> e <strong>NBR 10844</strong>
+      &bull; Baseado nas normas <strong>NBR 5626</strong>, <strong>NBR 9649</strong>, <strong>NBR 10844</strong>, <strong>NBR 7229</strong> e <strong>NBR 13969</strong>
     </p>
     <p class="footer-disclaimer">
       Esta ferramenta fornece resultados orientativos. Projetos executivos devem ser elaborados por profissional habilitado e submetidos à aprovação dos órgãos competentes.
@@ -580,6 +792,7 @@
   <script src="js/calculos-esgoto.js"></script>
   <script src="js/calculos-drenagem.js"></script>
   <script src="js/projeto.js"></script>
+  <script src="js/calculos-fossa.js"></script>
   <script src="js/app.js"></script>
   <script src="js/pwa.js"></script>
 </body>

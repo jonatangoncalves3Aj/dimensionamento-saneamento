@@ -499,6 +499,82 @@ select {
   font-family: var(--font-mono);
 }
 
+/* ---------- Explicações de fórmulas ---------- */
+.explicacao {
+  margin: 1rem 0 0.75rem;
+  border: 1px solid var(--blue-100);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.explicacao summary {
+  padding: 0.65rem 0.9rem;
+  background: var(--blue-50);
+  color: var(--blue-700);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: background var(--transition);
+}
+
+.explicacao summary::-webkit-details-marker { display: none; }
+
+.explicacao[open] summary {
+  background: var(--blue-100);
+  border-bottom: 1px solid var(--blue-200);
+}
+
+.explicacao summary:hover { background: var(--blue-100); }
+
+.explicacao-corpo {
+  padding: 0.9rem 1rem;
+  font-size: 0.83rem;
+  color: var(--gray-700);
+  line-height: 1.65;
+}
+
+.explicacao-corpo p { margin: 0.5rem 0; }
+
+.formula-box {
+  background: var(--gray-100);
+  border-left: 3px solid var(--blue-500);
+  padding: 0.5rem 0.85rem;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  margin: 0.4rem 0 0.75rem;
+  color: var(--gray-900);
+}
+
+.ref-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  margin: 0.5rem 0;
+}
+
+.ref-table th {
+  background: var(--gray-100);
+  color: var(--gray-700);
+  font-weight: 600;
+  padding: 0.35rem 0.6rem;
+  text-align: left;
+  border: 1px solid var(--gray-200);
+}
+
+.ref-table td {
+  padding: 0.3rem 0.6rem;
+  border: 1px solid var(--gray-200);
+  color: var(--gray-700);
+}
+
+.ref-table tr:nth-child(even) td { background: var(--gray-50); }
+
 /* ---------- Dados do Projeto ---------- */
 .projeto-grid {
   display: grid;
