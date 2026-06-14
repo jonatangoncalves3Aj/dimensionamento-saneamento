@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dimensionamento de Saneamento</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="logo-area">
+        <svg class="logo-icon" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <circle cx="20" cy="20" r="20" fill="#1a4a8a"/>
+          <path d="M20 8 C20 8 12 16 12 22 C12 27.5 15.5 31 20 31 C24.5 31 28 27.5 28 22 C28 16 20 8 20 8Z" fill="#4fc3f7"/>
+          <path d="M20 14 C20 14 15 19 15 23 C15 25.8 17.2 28 20 28 C22.8 28 25 25.8 25 23 C25 19 20 14 20 14Z" fill="#fff" opacity="0.5"/>
+        </svg>
+        <div>
+          <h1 class="site-title">Dimensionamento de Saneamento</h1>
+          <p class="site-subtitle">Ferramenta de Cálculo para Engenharia Sanitária</p>
+        </div>
+      </div>
+      <div class="header-badges">
+        <span class="badge">NBR 5626</span>
+        <span class="badge">NBR 9649</span>
+        <span class="badge">NBR 10844</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Navigation Tabs -->
+  <nav class="tab-nav" role="tablist" aria-label="Módulos de cálculo">
+    <button class="tab-btn active" role="tab" aria-selected="true" aria-controls="panel-agua" id="tab-agua" onclick="switchTab('agua')">
+      <span class="tab-icon">&#128167;</span>
+      Água Fria
+    </button>
+    <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-esgoto" id="tab-esgoto" onclick="switchTab('esgoto')">
+      <span class="tab-icon">&#9972;</span>
+      Esgotamento Sanitário
+    </button>
+    <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-drenagem" id="tab-drenagem" onclick="switchTab('drenagem')">
+      <span class="tab-icon">&#127783;</span>
+      Drenagem Pluvial
+    </button>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="main-content">
+
+    <!-- ======================== ÁGUA ======================== -->
+    <section class="panel active" id="panel-agua" role="tabpanel" aria-labelledby="tab-agua">
+      <div class="panel-header">
+        <h2>Abastecimento de Água — NBR 5626</h2>
+        <p class="panel-desc">Cálculo de demanda, diâmetro de tubulação e perda de carga para sistemas de água fria.</p>
+      </div>
+
+      <div class="calc-grid">
+        <!-- Demanda -->
+        <div class="card">
+          <h3 class="card-title">
+            <span class="card-number">1</span>
+            Cálculo da Demanda de Água
+          </h3>
+          <form id="form-demanda-agua" onsubmit="return false;">
+            <div class="form-group">
+              <label for="num-habitantes">Número de habitantes</label>
+              <input type="number" id="num-habitantes" min="1" value="4" placeholder="ex: 4" />
+            </div>
+            <div class="form-group">
+              <label for="consumo-per-capita">Consumo per capita (L/hab·dia)</label>
+              <input type="number" id="consumo-per-capita" min="1" value="200" placeholder="ex: 200" />
+              <small class="hint">Referência NBR 5626: residências 150–300 L/hab·dia</small>
+            </div>
+            <div class="form-group">
+              <label for="reserva-incendio">Reserva de incêndio (L) <span class="optional">(opcional)</span></label>
+              <input type="number" id="reserva-incendio" min="0" value="0" placeholder="ex: 10000" />
+            </div>
+            <button class="btn-calc" onclick="calcularDemandaAgua()">Calcular Demanda</button>
+          </form>
+          <div id="resultado-demanda-agua" class="resultado hidden"></div>
+        </div>
+
+        <!-- Diâmetro de tubulação -->
+        <div class="card">
+          <h3 class="card-title">
+            <span class="card-number">2</span>
+            Diâmetro da Tubulação (Q = V × A)
+          </h3>
+          <form id="form-diametro-agua" onsubmit="return false;">
+            <div class="form-group">
+              <label for="vazao-agua">Vazão de projeto Q (L/s)</label>
+              <input type="number" id="vazao-agua" step="0.01" min="0.01" value="0.5" placeholder="ex: 0.5" />
+            </div>
+            <div class="form-group">
+              <label for="velocidade-agua">Velocidade de escoamento V (m/s)</label>
+              <input type="number" id="velocidade-agua" step="0.01" min="0.1" value="1.5" placeholder="ex: 1.5" />
+              <small class="hint">NBR 5626: V entre 0,6 e 3,0 m/s</small>
+            </div>
+            <button class="btn-calc" onclick="calcularDiametroAgua()">Calcular Diâmetro</button>
+          </form>
+          <div id="resultado-diametro-agua" class="resultado hidden"></div>
+        </div>
+
+        <!-- Perda de carga Hazen-Williams -->
+        <div class="card">
+          <h3 class="card-title">
+            <span class="card-number">3</span>
+            Perda de Carga — Hazen-Williams
+          </h3>
+          <form id="form-hazen" onsubmit="return false;">
+            <div class="form-group">
+              <label for="hw-vazao">Vazão Q (L/s)</label>
+              <input type="number" id="hw-vazao" step="0.01" min="0.01" value="0.5" placeholder="ex: 0.5" />
+            </div>
+            <div class="form-group">
+              <label for="hw-diametro">Diâmetro interno D (mm)</label>
+              <input type="number" id="hw-diametro" step="0.1" min="1" value="50" placeholder="ex: 50" />
+            </div>
+            <div class="form-group">
+              <label for="hw-comprimento">Comprimento L (m)</label>
+              <input type="number" id="hw-comprimento" step="0.1" min="0.1" value="10" placeholder="ex: 10" />
+            </div>
+            <div class="form-group">
+              <label for="hw-c">Coeficiente C de Hazen-Williams</label>
+              <select id="hw-c">
+                <option value="150">150 — PVC (novo)</option>
+                <option value="140">140 — PVC (usado) / Cobre</option>
+                <option value="130" selected>130 — Ferro galvanizado (novo)</option>
+                <option value="120">120 — Ferro galvanizado (usado)</option>
+                <option value="100">100 — Ferro fundido</option>
+                <option value="80">80 — Concreto</option>
+              </select>
+            </div>
+            <button class="btn-calc" onclick="calcularHazenWilliams()">Calcular Perda de Carga</button>
+          </form>
+          <div id="resultado-hazen" class="resultado hidden"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================== ESGOTO ======================== -->
+    <section class="panel" id="panel-esgoto" role="tabpanel" aria-labelledby="tab-esgoto">
+      <div class="panel-header">
+        <h2>Esgotamento Sanitário — NBR 9649</h2>
+        <p class="panel-desc">Cálculo da vazão de esgoto, diâmetro pelo método de Manning, declividade mínima e verificação de velocidades.</p>
+      </div>
+
+      <div class="calc-grid">
+        <!-- Vazão de esgoto -->
+        <div class="card">
+          <h3 class="card-title">
+            <span class="card-number">1</span>
+            Vazão de Esgoto
+          </h3>
+          <form id="form-vazao-esgoto" onsubmit="return false;">
+            <div class="form-group">
+              <label for="esg-habitantes">Número de habitantes</label>
+              <input type="number" id="esg-habitantes" min="1" value="100" placeholder="ex: 100" />
+            </div>
+            <div class="form-group">
+              <label for="esg-consumo">Consumo per capita de água (L/hab·dia)</label>
+              <input type="number" id="esg-consumo" min="1" value="200" placeholder="ex: 200" />
+            </div>
+            <div class="form-group">
+              <label for="esg-coef-retorno">Coeficiente de retorno C1 (%)</label>
+              <input type="number" id="esg-coef-retorno" min="1" max="100" value="80" placeholder="ex: 80" />
+              <small class="hint">NBR 9649: geralmente 80% do consumo de água</small>
+            </div>
+            <div class="form-group">
+              <label for="esg-k1">Coeficiente de variação diária K1</label>
+              <input type="number" id="esg-k1" step="0.01" min="1" value="1.20" placeholder="ex: 1.20" />
+              <small class="hint">K1 = 1,20 (NBR 9649)</small>
+            </div>
+            <div class="form-group">
+              <label for="esg-k2">Coeficiente de variação horária K2</label>
+              <input type="number" id="esg-k2" step="0.01" min="1" value="1.50" placeholder="ex: 1.50" />
+              <small class="hint">K2 = 1,50 (NBR 9649)</small>
+            </div>
+            <button class="btn-calc" onclick="calcularVazaoEsgoto()">Calcular Vazão</button>
+          </form>
+          <div id="resultado-vazao-esgoto" class="resultado hidden"></div>
+        </div>
+
+        <!-- Manning -->
+        <div class="card">
+          <h3 class="card-title">
+            <span class="card-number">2</span>
+            Diâmetro — Fórmula de Manning
+          </h3>
+          <form id="form-manning" onsubmit="return false;">
+            <div class="form-group">
+              <label for="mn-vazao">Vazão de projeto Q (L/s)</label>
+              <input type="number" id="mn-vazao" step="0.001" min="0.001" value="2.0" placeholder="ex: 2.0" />
+            </div>
+            <div class="form-group">
+              <label for="mn-declividade">Declividade I (m/m)</label>
+              <input type="number" id="mn-declividade" step="0.0001" min="0.0001" value="0.005" placeholder="ex: 0.005" />
+              <small class="hint">Ex: 0,005 = 5 ‰</small>
+            </div>
+            <div class="form-group">
+              <label for="mn-n">Coeficiente de rugosidade n de Manning</label>
+              <select id="mn-n">
+                <option value="0.009">0,009 — PVC liso</option>
+                <option value="0.010" selected>0,010 — PVC corrugado / Concreto liso</option>
+                <option value="0.013">0,013 — Concreto</option>
+                <option value="0.015">0,015 — Manilha cerâmica</option>
+                <option value="0.020">0,020 — Alvenaria</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="mn-lam-max">Lâmina máxima (fração do diâmetro)</label>
+              <input type="number" id="mn-lam-max" step="0.01" min="0.1" max="1" value="0.75" placeholder="ex: 0.75" />
+              <small class="hint">NBR 9649: máx. 75% do diâmetro (0,75D)</small>
+            </div>
+            <button class="btn-calc" onclick="calcularManning()">Calcular por Manning</button>
+          </form>
+          <div id="resultado-manning" class="resultado hidden"></div>
+        </div>
+
+        <!-- Declividade mínima -->
+        <div class="card">
+          <h3 class="card-title">
+            <span class="card-number">3</span>
+            Declividade Mínima e Verificação de Velocidades
+          </h3>
+          <form id="form-declividade" onsubmit="return false;">
+            <div class="form-group">
+              <label for="dc-diametro">Diâmetro nominal DN (mm)</label>
+              <input type="number" id="dc-diametro" min="100" value="150" placeholder="ex: 150" />
+            </div>
+            <div class="form-group">
+              <label for="dc-n">Coeficiente n de Manning</label>
+              <input type="number" id="dc-n" step="0.001" min="0.001" value="0.013" placeholder="ex: 0.013" />
+            </div>
+            <div class="form-group">
+              <label for="dc-vazao">Vazão de projeto Q (L/s)</label>
+              <input type="number" id="dc-vazao" step="0.001" min="0.001" value="2.0" placeholder="ex: 2.0" />
+            </div>
+            <button class="btn-calc" onclick="calcularDeclividade()">Verificar Declividade e Velocidade</button>
+          </form>
+          <div id="resultado-declividade" class="resultado hidden"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================== DRENAGEM ======================== -->
+    <section class="panel" id="panel-drenagem" role="tabpanel" aria-labelledby="tab-drenagem">
+      <div class="panel-header">
+        <h2>Drenagem Pluvial — NBR 10844</h2>
+        <p class="panel-desc">Cálculo pelo Método Racional, período de retorno e dimensionamento de tubulações pluviais.</p>
+      </div>
+
+      <div class="calc-grid">
+        <!-- Método Racional -->
+        <div class="card">
+          <h3 class="card-title">
+            <span class="card-number">1</span>
+            Método Racional — Q = C × i × A / 360
+          </h3>
+          <form id="form-racional" onsubmit="return false;">
+            <div class="form-group">
+              <label for="rc-c">Coeficiente de escoamento superficial C</label>
+              <select id="rc-c">
+                <option value="0.95">0,95 — Coberturas metálicas / telhas</option>
+                <option value="0.90" selected>0,90 — Pavimentos asfálticos / concreto</option>
+                <option value="0.70">0,70 — Superfícies impermeabilizadas</option>
+                <option value="0.50">0,50 — Jardins e gramados (solo argiloso)</option>
+                <option value="0.35">0,35 — Jardins e gramados (solo arenoso)</option>
+                <option value="0.20">0,20 — Florestas e áreas rurais</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="rc-i">Intensidade de chuva i (mm/h)</label>
+              <input type="number" id="rc-i" step="0.1" min="0.1" value="100" placeholder="ex: 100" />
+              <small class="hint">Obtido na curva IDF da região</small>
+            </div>
+            <div class="form-group">
+              <label for="rc-a">Área de contribuição A (ha)</label>
+              <input type="number" id="rc-a" step="0.001" min="0.001" value="0.5" placeholder="ex: 0.5" />
+            </div>
+            <button class="btn-calc" onclick="calcularMetodoRacional()">Calcular Vazão</button>
+          </form>
+          <div id="resultado-racional" class="resultado hidden"></div>
+        </div>
+
+        <!-- Período de Retorno -->
+        <div class="card">
+          <h3 class="card-title">
+            <span class="card-number">2</span>
+            Intensidade de Chuva pela Equação IDF
+          </h3>
+          <form id="form-idf" onsubmit="return false;">
+            <div class="form-group">
+              <label for="idf-cidade">Cidade de referência</label>
+              <select id="idf-cidade" onchange="atualizarCoeficientesIDF()">
+                <option value="sao-paulo">São Paulo — SP</option>
+                <option value="rio-de-janeiro">Rio de Janeiro — RJ</option>
+                <option value="belo-horizonte">Belo Horizonte — MG</option>
+                <option value="curitiba">Curitiba — PR</option>
+                <option value="porto-alegre">Porto Alegre — RS</option>
+                <option value="salvador">Salvador — BA</option>
+                <option value="recife">Recife — PE</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="idf-tr">Período de retorno TR (anos)</label>
+              <select id="idf-tr">
+                <option value="2">2 anos — Área rural</option>
+                <option value="5" selected>5 anos — Área residencial</option>
+                <option value="10">10 anos — Área comercial</option>
+                <option value="25">25 anos — Área industrial / hospitalar</option>
+                <option value="50">50 anos — Passagem inferior / túnel</option>
+                <option value="100">100 anos — Obras especiais</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="idf-tc">Tempo de concentração Tc (min)</label>
+              <input type="number" id="idf-tc" min="5" value="15" placeholder="ex: 15" />
+              <small class="hint">Mínimo de 5 minutos (NBR 10844)</small>
+            </div>
+            <div class="form-group idf-coefs" id="idf-coefs-display">
+              <label>Coeficientes IDF (K, a, b, c):</label>
+              <div class="coefs-row">
+                <span>K = <strong id="idf-k">1716.68</strong></span>
+                <span>a = <strong id="idf-a">0.165</strong></span>
+                <span>b = <strong id="idf-b">11</strong></span>
+                <span>c = <strong id="idf-c">0.889</strong></span>
+              </div>
+            </div>
+            <button class="btn-calc" onclick="calcularIntensidadeIDF()">Calcular Intensidade</button>
+          </form>
+          <div id="resultado-idf" class="resultado hidden"></div>
+        </div>
+
+        <!-- Dimensionamento da tubulação pluvial -->
+        <div class="card">
+          <h3 class="card-title">
+            <span class="card-number">3</span>
+            Dimensionamento de Tubulação Pluvial
+          </h3>
+          <form id="form-tubo-pluvial" onsubmit="return false;">
+            <div class="form-group">
+              <label for="tp-vazao">Vazão de projeto Q (L/s)</label>
+              <input type="number" id="tp-vazao" step="0.01" min="0.01" value="50" placeholder="ex: 50" />
+            </div>
+            <div class="form-group">
+              <label for="tp-declividade">Declividade I (m/m)</label>
+              <input type="number" id="tp-declividade" step="0.0001" min="0.0001" value="0.005" placeholder="ex: 0.005" />
+            </div>
+            <div class="form-group">
+              <label for="tp-n">Coeficiente n de Manning</label>
+              <select id="tp-n">
+                <option value="0.009">0,009 — PVC liso</option>
+                <option value="0.013" selected>0,013 — Concreto liso</option>
+                <option value="0.015">0,015 — Concreto rugoso</option>
+              </select>
+            </div>
+            <button class="btn-calc" onclick="calcularTubulacaoPluvial()">Calcular Diâmetro</button>
+          </form>
+          <div id="resultado-tubo-pluvial" class="resultado hidden"></div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <p>
+      Dimensionamento de Saneamento &mdash; Ferramenta de Apoio à Engenharia Sanitária
+      &bull; Baseado nas normas <strong>NBR 5626</strong>, <strong>NBR 9649</strong> e <strong>NBR 10844</strong>
+    </p>
+    <p class="footer-disclaimer">
+      Esta ferramenta fornece resultados orientativos. Projetos executivos devem ser elaborados por profissional habilitado e submetidos à aprovação dos órgãos competentes.
+    </p>
+  </footer>
+
+  <script src="js/calculos-agua.js"></script>
+  <script src="js/calculos-esgoto.js"></script>
+  <script src="js/calculos-drenagem.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
