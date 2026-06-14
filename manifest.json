@@ -1,0 +1,38 @@
+{
+  "name": "Dimensionamento de Saneamento",
+  "short_name": "Saneamento",
+  "description": "Ferramenta de cálculo para engenharia sanitária — NBR 5626, NBR 9649, NBR 10844",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0d2a5e",
+  "theme_color": "#1a4a8a",
+  "lang": "pt-BR",
+  "categories": ["utilities", "productivity"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icons/icon.svg",     "sizes": "any",     "type": "image/svg+xml" }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Água Fria",
+      "short_name": "Água",
+      "description": "Cálculos NBR 5626",
+      "url": "/#agua"
+    },
+    {
+      "name": "Esgoto Sanitário",
+      "short_name": "Esgoto",
+      "description": "Cálculos NBR 9649",
+      "url": "/#esgoto"
+    },
+    {
+      "name": "Drenagem Pluvial",
+      "short_name": "Drenagem",
+      "description": "Cálculos NBR 10844",
+      "url": "/#drenagem"
+    }
+  ]
+}
