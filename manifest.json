@@ -2,7 +2,7 @@
   "name": "Dimensionamento de Saneamento",
   "short_name": "Saneamento",
   "description": "Ferramenta de cálculo para engenharia sanitária — NBR 5626, NBR 9649, NBR 10844",
-  "start_url": "/",
+  "start_url": "./",
   "display": "standalone",
   "orientation": "portrait-primary",
   "background_color": "#0d2a5e",

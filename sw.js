@@ -1,16 +1,16 @@
 // Service Worker — Dimensionamento de Saneamento
 const CACHE = 'saneamento-v1';
 const ASSETS = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/css/style.css',
-  '/js/app.js',
-  '/js/projeto.js',
-  '/js/calculos-agua.js',
-  '/js/calculos-esgoto.js',
-  '/js/calculos-drenagem.js',
-  '/icons/icon.svg',
+  './',
+  './index.html',
+  './manifest.json',
+  './css/style.css',
+  './js/app.js',
+  './js/projeto.js',
+  './js/calculos-agua.js',
+  './js/calculos-esgoto.js',
+  './js/calculos-drenagem.js',
+  './icons/icon.svg',
 ];
 
 self.addEventListener('install', e => {

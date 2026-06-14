@@ -1,9 +1,12 @@
 // PWA — Service Worker e banner de instalação
 
-/* Registrar Service Worker */
+/* Registrar Service Worker — usa caminho relativo para funcionar em subdiretórios (GitHub Pages) */
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
-    navigator.serviceWorker.register('/sw.js').catch(function () {});
+    const swPath = document.querySelector('script[src*="pwa.js"]')
+      ? new URL('sw.js', document.baseURI).href
+      : '/sw.js';
+    navigator.serviceWorker.register(swPath, { scope: './' }).catch(function () {});
   });
 }
 
