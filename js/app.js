@@ -60,8 +60,8 @@ function mostrarErro(el, msg) {
    Inicialização
    ============================================================ */
 document.addEventListener('DOMContentLoaded', function () {
-  // Garantir que a aba Água está ativa ao carregar
-  switchTab('agua');
+  // Iniciar na aba Dados do Projeto
+  switchTab('projeto');
 
   // Inicializar coeficientes IDF com a cidade padrão
   if (typeof atualizarCoeficientesIDF === 'function') {

@@ -31,7 +31,11 @@
 
   <!-- Navigation Tabs -->
   <nav class="tab-nav" role="tablist" aria-label="Módulos de cálculo">
-    <button class="tab-btn active" role="tab" aria-selected="true" aria-controls="panel-agua" id="tab-agua" onclick="switchTab('agua')">
+    <button class="tab-btn active" role="tab" aria-selected="true" aria-controls="panel-projeto" id="tab-projeto" onclick="switchTab('projeto')">
+      <span class="tab-icon">&#128196;</span>
+      Dados do Projeto
+    </button>
+    <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-agua" id="tab-agua" onclick="switchTab('agua')">
       <span class="tab-icon">&#128167;</span>
       Água Fria
     </button>
@@ -48,8 +52,166 @@
   <!-- Main Content -->
   <main class="main-content">
 
+    <!-- ======================== DADOS DO PROJETO ======================== -->
+    <section class="panel active" id="panel-projeto" role="tabpanel" aria-labelledby="tab-projeto">
+      <div class="panel-header">
+        <h2>Dados do Projeto</h2>
+        <p class="panel-desc">Preencha as informações gerais da obra. Os dados serão aplicados automaticamente nos módulos de cálculo.</p>
+      </div>
+
+      <div id="projeto-resumo-banner" class="projeto-banner hidden"></div>
+
+      <div class="projeto-grid">
+
+        <!-- Identificação -->
+        <div class="card card-full">
+          <h3 class="card-title"><span class="card-number">1</span> Identificação da Obra</h3>
+          <div class="form-row-3">
+            <div class="form-group">
+              <label for="proj-nome">Nome do projeto</label>
+              <input type="text" id="proj-nome" placeholder="ex: Residencial Vila Nova" maxlength="80" />
+            </div>
+            <div class="form-group">
+              <label for="proj-responsavel">Responsável técnico</label>
+              <input type="text" id="proj-responsavel" placeholder="ex: Eng. João Silva — CREA 12345" maxlength="80" />
+            </div>
+            <div class="form-group">
+              <label for="proj-data">Data</label>
+              <input type="date" id="proj-data" />
+            </div>
+          </div>
+          <div class="form-row-3">
+            <div class="form-group">
+              <label for="proj-endereco">Endereço / localização</label>
+              <input type="text" id="proj-endereco" placeholder="ex: Rua das Flores, 100 — Bairro Centro" maxlength="120" />
+            </div>
+            <div class="form-group">
+              <label for="proj-cidade-idf">Cidade (para curva IDF)</label>
+              <select id="proj-cidade-idf">
+                <option value="sao-paulo">São Paulo — SP</option>
+                <option value="rio-de-janeiro">Rio de Janeiro — RJ</option>
+                <option value="belo-horizonte">Belo Horizonte — MG</option>
+                <option value="curitiba">Curitiba — PR</option>
+                <option value="porto-alegre">Porto Alegre — RS</option>
+                <option value="salvador">Salvador — BA</option>
+                <option value="recife">Recife — PE</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="proj-tipo">Tipo de edificação</label>
+              <select id="proj-tipo" onchange="atualizarPadroesTipo()">
+                <option value="residencial-unifamiliar">Residencial unifamiliar</option>
+                <option value="residencial-multifamiliar">Residencial multifamiliar</option>
+                <option value="comercial">Comercial / escritórios</option>
+                <option value="industrial">Industrial</option>
+                <option value="hospitalar">Hospitalar / saúde</option>
+                <option value="escolar">Escolar</option>
+                <option value="hotel">Hotel / pousada</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Ocupação -->
+        <div class="card">
+          <h3 class="card-title"><span class="card-number">2</span> Dados de Ocupação</h3>
+          <div class="form-group">
+            <label for="proj-habitantes">Número de habitantes / usuários</label>
+            <input type="number" id="proj-habitantes" min="1" value="4" placeholder="ex: 4" />
+          </div>
+          <div class="form-group">
+            <label for="proj-unidades">Número de unidades (apartamentos / salas)</label>
+            <input type="number" id="proj-unidades" min="1" value="1" placeholder="ex: 1" />
+          </div>
+          <div class="form-group">
+            <label for="proj-pavimentos">Número de pavimentos</label>
+            <input type="number" id="proj-pavimentos" min="1" value="2" placeholder="ex: 2" />
+          </div>
+          <div class="form-group">
+            <label for="proj-consumo-pc">Consumo per capita de água (L/hab·dia)</label>
+            <input type="number" id="proj-consumo-pc" min="50" value="200" placeholder="ex: 200" />
+            <small class="hint" id="proj-consumo-hint">NBR 5626 — Residencial: 150 a 300 L/hab·dia</small>
+          </div>
+          <div class="form-group">
+            <label for="proj-coef-retorno">Coeficiente de retorno de esgoto C1 (%)</label>
+            <input type="number" id="proj-coef-retorno" min="60" max="100" value="80" placeholder="ex: 80" />
+            <small class="hint">NBR 9649: geralmente 80 %</small>
+          </div>
+        </div>
+
+        <!-- Área e drenagem -->
+        <div class="card">
+          <h3 class="card-title"><span class="card-number">3</span> Área e Drenagem</h3>
+          <div class="form-group">
+            <label for="proj-area-total">Área total do lote (m²)</label>
+            <input type="number" id="proj-area-total" min="1" value="360" placeholder="ex: 360" />
+          </div>
+          <div class="form-group">
+            <label for="proj-area-impermeavel">Área impermeável (m²)</label>
+            <input type="number" id="proj-area-impermeavel" min="0" value="250" placeholder="ex: 250" />
+            <small class="hint" id="proj-imp-hint">Coberturas + pavimentos + calçadas</small>
+          </div>
+          <div class="form-group">
+            <label for="proj-coef-c">Coeficiente de escoamento C (calculado)</label>
+            <input type="number" id="proj-coef-c" step="0.01" min="0.1" max="1" value="0.70" placeholder="ex: 0.70" />
+            <small class="hint">Calculado automaticamente ou ajuste manualmente</small>
+          </div>
+          <div class="form-group">
+            <label for="proj-tr">Período de retorno TR (anos)</label>
+            <select id="proj-tr">
+              <option value="2">2 anos — Área rural</option>
+              <option value="5" selected>5 anos — Residencial</option>
+              <option value="10">10 anos — Comercial</option>
+              <option value="25">25 anos — Industrial / hospitalar</option>
+              <option value="50">50 anos — Obras especiais</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="proj-tc">Tempo de concentração Tc (min)</label>
+            <input type="number" id="proj-tc" min="5" value="15" placeholder="ex: 15" />
+          </div>
+        </div>
+
+        <!-- Reserva de incêndio e outros -->
+        <div class="card">
+          <h3 class="card-title"><span class="card-number">4</span> Parâmetros Complementares</h3>
+          <div class="form-group">
+            <label for="proj-reserva-incendio">Reserva de incêndio (L)</label>
+            <input type="number" id="proj-reserva-incendio" min="0" value="0" placeholder="ex: 10000" />
+            <small class="hint">IT-17/CBPMESP: mín. 15.000 L para residências acima de 750 m²</small>
+          </div>
+          <div class="form-group">
+            <label for="proj-k1">Coeficiente K1 — variação diária</label>
+            <input type="number" id="proj-k1" step="0.01" min="1" value="1.20" placeholder="ex: 1.20" />
+            <small class="hint">NBR 9649: K1 = 1,20</small>
+          </div>
+          <div class="form-group">
+            <label for="proj-k2">Coeficiente K2 — variação horária</label>
+            <input type="number" id="proj-k2" step="0.01" min="1" value="1.50" placeholder="ex: 1.50" />
+            <small class="hint">NBR 9649: K2 = 1,50</small>
+          </div>
+          <div class="form-group">
+            <label for="proj-obs">Observações gerais</label>
+            <textarea id="proj-obs" rows="3" placeholder="Notas, restrições do projeto, referências normativas adicionais..." style="width:100%;padding:0.55rem 0.75rem;border:1.5px solid var(--gray-300);border-radius:4px;font-family:inherit;font-size:0.9rem;resize:vertical;"></textarea>
+          </div>
+        </div>
+
+      </div><!-- .projeto-grid -->
+
+      <!-- Botão aplicar -->
+      <div class="projeto-actions">
+        <button class="btn-aplicar" onclick="aplicarDadosProjeto()">
+          &#9654; Aplicar dados a todos os módulos
+        </button>
+        <button class="btn-limpar" onclick="limparDadosProjeto()">
+          &#8635; Limpar campos
+        </button>
+      </div>
+
+    </section><!-- #panel-projeto -->
+
     <!-- ======================== ÁGUA ======================== -->
-    <section class="panel active" id="panel-agua" role="tabpanel" aria-labelledby="tab-agua">
+    <section class="panel" id="panel-agua" role="tabpanel" aria-labelledby="tab-agua">
       <div class="panel-header">
         <h2>Abastecimento de Água — NBR 5626</h2>
         <p class="panel-desc">Cálculo de demanda, diâmetro de tubulação e perda de carga para sistemas de água fria.</p>
@@ -379,6 +541,7 @@
   <script src="js/calculos-agua.js"></script>
   <script src="js/calculos-esgoto.js"></script>
   <script src="js/calculos-drenagem.js"></script>
+  <script src="js/projeto.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>
