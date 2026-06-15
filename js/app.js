@@ -68,6 +68,17 @@ document.addEventListener('DOMContentLoaded', function () {
     atualizarCoeficientesIDF();
   }
 
+  // Inicializar seletor de aparelhos do módulo predial
+  if (typeof inicializarSeletorAparelhos === 'function') {
+    inicializarSeletorAparelhos();
+    renderizarTabelaAparelhos();
+  }
+
+  // Inicializar contribuição da fossa com o valor padrão
+  if (typeof atualizarContribuicaoFossa === 'function') {
+    atualizarContribuicaoFossa();
+  }
+
   // Permitir submissão com Enter em campos de formulário
   document.querySelectorAll('input[type="number"]').forEach(function (input) {
     input.addEventListener('keydown', function (e) {

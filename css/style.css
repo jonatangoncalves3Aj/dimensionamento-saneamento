@@ -807,3 +807,236 @@ select {
   .card { box-shadow: none; border: 1px solid #ccc; break-inside: avoid; }
   body { background: white; }
 }
+
+/* ============================================================
+   Módulo Predial UHC
+   ============================================================ */
+.predial-add-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.predial-table-wrap {
+  overflow-x: auto;
+  margin-bottom: 1rem;
+}
+
+.predial-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.predial-table th,
+.predial-table td {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--gray-200);
+  text-align: left;
+}
+
+.predial-table thead th {
+  background: var(--blue-700);
+  color: var(--white);
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+
+.predial-table tfoot td {
+  background: var(--gray-100);
+  font-weight: 600;
+}
+
+.predial-table .text-center { text-align: center; }
+
+.predial-empty {
+  text-align: center;
+  color: var(--gray-400);
+  font-style: italic;
+  padding: 1.5rem !important;
+}
+
+.btn-remove-ap {
+  background: none;
+  border: 1px solid var(--gray-300);
+  color: var(--gray-500);
+  border-radius: 4px;
+  cursor: pointer;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.75rem;
+  transition: all var(--transition);
+}
+.btn-remove-ap:hover { background: #fee2e2; border-color: #f87171; color: #dc2626; }
+
+.predial-params-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.result-subtitle {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--blue-700);
+  margin: 1rem 0 0.4rem;
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+/* ============================================================
+   Memorial de Cálculo
+   ============================================================ */
+.memorial-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+}
+
+.btn-print {
+  background: var(--green-600, #16a34a) !important;
+}
+.btn-print:hover { background: #15803d !important; }
+
+.memorial-area {
+  background: var(--white);
+  border: 1.5px solid var(--gray-200);
+  border-radius: 8px;
+  padding: 1.5rem;
+  min-height: 200px;
+}
+
+.memorial-aviso {
+  color: var(--gray-500);
+  text-align: center;
+  padding: 2rem;
+  font-size: 0.95rem;
+}
+
+.memorial-secao {
+  margin-bottom: 1.5rem;
+  break-inside: avoid;
+}
+
+.memorial-modulo-titulo {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--blue-700);
+  border-bottom: 2px solid var(--blue-100, #dbeafe);
+  padding-bottom: 0.4rem;
+  margin-bottom: 0.75rem;
+}
+
+.memorial-modulo-corpo .result-main { margin-bottom: 0.75rem; }
+
+/* Memorial document styles */
+.memorial-doc { font-size: 0.88rem; }
+
+.memorial-header-doc {
+  margin-bottom: 1.5rem;
+}
+
+.memorial-logo-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.memorial-titulo-principal {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--blue-700);
+  margin: 0;
+}
+
+.memorial-subtitulo {
+  font-size: 0.85rem;
+  color: var(--gray-500);
+  margin: 0;
+}
+
+.memorial-dados-projeto {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+}
+.memorial-dados-projeto td {
+  padding: 0.35rem 0.6rem;
+  border: 1px solid var(--gray-200);
+}
+.memorial-dados-projeto td:first-child,
+.memorial-dados-projeto td:nth-child(3) {
+  background: var(--gray-50, #f9fafb);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.memorial-disclaimer {
+  font-size: 0.78rem;
+  color: var(--gray-500);
+  font-style: italic;
+  border-left: 3px solid var(--gray-300);
+  padding-left: 0.75rem;
+  margin: 0;
+}
+
+.memorial-hr {
+  border: none;
+  border-top: 2px solid var(--blue-100, #dbeafe);
+  margin: 1.25rem 0;
+}
+
+.memorial-rodape {
+  margin-top: 2rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--gray-200);
+  font-size: 0.78rem;
+  color: var(--gray-500);
+  text-align: center;
+}
+
+/* ============================================================
+   Print — Memorial
+   ============================================================ */
+@media print {
+  /* Ocultar tudo exceto o memorial */
+  .tab-nav, .header, .footer, .memorial-actions,
+  .btn-calc, .btn-limpar, .pwa-banner,
+  .explicacao, .footer-disclaimer { display: none !important; }
+
+  .main-content { padding: 0 !important; }
+  .panel { display: none !important; }
+  #panel-memorial { display: block !important; }
+
+  .memorial-area {
+    border: none !important;
+    padding: 0 !important;
+  }
+
+  .memorial-doc { font-size: 10pt; }
+
+  .result-table, .memorial-dados-projeto, .ref-table {
+    font-size: 9pt;
+    break-inside: avoid;
+  }
+
+  .memorial-secao { break-inside: avoid; page-break-inside: avoid; }
+  .memorial-modulo-titulo { color: #1e3a8a !important; }
+
+  body { background: white !important; }
+}
+
+/* ============================================================
+   Responsivo novos módulos
+   ============================================================ */
+@media (max-width: 700px) {
+  .predial-add-row { flex-direction: column; }
+  .predial-params-row { grid-template-columns: 1fr; }
+  .memorial-actions { flex-direction: column; }
+  .memorial-logo-row { flex-direction: column; align-items: flex-start; }
+}

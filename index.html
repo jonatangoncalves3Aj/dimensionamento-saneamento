@@ -36,6 +36,7 @@
         <span class="badge">NBR 10844</span>
         <span class="badge">NBR 7229</span>
         <span class="badge">NBR 13969</span>
+        <span class="badge">NBR 8160</span>
       </div>
     </div>
   </header>
@@ -54,6 +55,10 @@
       <span class="tab-icon">&#9972;</span>
       Esgotamento Sanitário
     </button>
+    <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-predial" id="tab-predial" onclick="switchTab('predial')">
+      <span class="tab-icon">&#128295;</span>
+      Esgoto Predial UHC
+    </button>
     <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-drenagem" id="tab-drenagem" onclick="switchTab('drenagem')">
       <span class="tab-icon">&#127783;</span>
       Drenagem Pluvial
@@ -61,6 +66,10 @@
     <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-fossa" id="tab-fossa" onclick="switchTab('fossa')">
       <span class="tab-icon">&#9917;</span>
       Fossa / Filtro / Sumidouro
+    </button>
+    <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-memorial" id="tab-memorial" onclick="switchTab('memorial')">
+      <span class="tab-icon">&#128196;</span>
+      Memorial de Cálculo
     </button>
   </nav>
 
@@ -556,6 +565,111 @@
       </div>
     </section>
 
+    <!-- ======================== ESGOTO PREDIAL UHC ======================== -->
+    <section class="panel" id="panel-predial" role="tabpanel" aria-labelledby="tab-predial">
+      <div class="panel-header">
+        <h2>Esgoto Predial — Método UHC</h2>
+        <p class="panel-desc">Dimensionamento de instalações prediais de esgoto pelo Método das Unidades Hunter de Contribuição — NBR 8160.</p>
+      </div>
+
+      <div class="calc-grid">
+        <div class="card card-full">
+          <h3 class="card-title">
+            <span class="nbr-badge">NBR 8160</span>
+            Construtor de Aparelhos Sanitários
+          </h3>
+
+          <!-- Adicionar aparelho -->
+          <div class="predial-add-row">
+            <div class="form-group" style="flex:2">
+              <label for="predial-aparelho-sel">Aparelho sanitário</label>
+              <select id="predial-aparelho-sel">
+                <option value="">— selecione —</option>
+              </select>
+            </div>
+            <div class="form-group" style="flex:0 0 120px">
+              <label for="predial-qtd">Quantidade</label>
+              <input type="number" id="predial-qtd" min="1" value="1" placeholder="1" />
+            </div>
+            <div class="form-group" style="flex:0 0 auto;align-self:flex-end">
+              <button class="btn-calc" style="margin:0" onclick="adicionarAparelho()">+ Adicionar</button>
+            </div>
+          </div>
+
+          <!-- Tabela de aparelhos -->
+          <div class="predial-table-wrap">
+            <table class="predial-table">
+              <thead>
+                <tr>
+                  <th>Aparelho</th>
+                  <th>Qtd</th>
+                  <th>UHC unit.</th>
+                  <th>UHC total</th>
+                  <th>DN ramal</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="predial-aparelhos-tbody">
+                <tr><td colspan="6" class="predial-empty">Nenhum aparelho adicionado. Use o formulário acima para adicionar.</td></tr>
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colspan="3"><strong>UHC Total Acumulado</strong></td>
+                  <td colspan="3"><strong id="predial-uhc-total">0,0</strong> UHC</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+          <div class="predial-params-row">
+            <div class="form-group">
+              <label for="predial-pav">Número de pavimentos</label>
+              <input type="number" id="predial-pav" min="1" value="2" placeholder="ex: 2" />
+              <small class="hint">Usado para dimensionar o tubo de queda (Tab. 4)</small>
+            </div>
+            <div class="form-group">
+              <label for="predial-decliv">Declividade do coletor (%)</label>
+              <select id="predial-decliv">
+                <option value="0.5">0,5%</option>
+                <option value="1.0" selected>1,0%</option>
+                <option value="2.0">2,0%</option>
+                <option value="4.0">4,0%</option>
+              </select>
+              <small class="hint">Usado para dimensionar o coletor predial (Tab. 3)</small>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-top:0.5rem">
+            <button class="btn-calc" onclick="calcularPredial()">&#9654; Calcular dimensionamento</button>
+            <button class="btn-limpar" onclick="limparAparelhosPredial()">&#8635; Limpar</button>
+          </div>
+
+          <details class="explicacao">
+            <summary>&#9432; Tabelas de referência — NBR 8160</summary>
+            <div class="explicacao-corpo">
+              <p><strong>Tabela 1 — UHC por aparelho (seleção automática):</strong></p>
+              <table class="ref-table">
+                <tr><th>Aparelho</th><th>UHC</th><th>DN mín. ramal</th></tr>
+                <tr><td>Bacia sanitária</td><td>6,0</td><td>100 mm</td></tr>
+                <tr><td>Chuveiro residencial</td><td>2,0</td><td>40 mm</td></tr>
+                <tr><td>Lavatório residencial</td><td>1,0</td><td>40 mm</td></tr>
+                <tr><td>Pia de cozinha residencial</td><td>3,0</td><td>50 mm</td></tr>
+                <tr><td>Tanque de lavar roupas</td><td>3,0</td><td>40 mm</td></tr>
+                <tr><td>Máquina de lavar roupas</td><td>3,0</td><td>50 mm</td></tr>
+              </table>
+              <p><strong>Tabela 5 — Ramais de esgoto:</strong> DN40→3 UHC; DN50→6; DN75→20; DN100→160.</p>
+              <p><strong>Tabela 4 — Tubos de queda:</strong> DN100→240 UHC (≤3 pav), 500 (>3 pav). DN mín. 100 com vaso sanitário.</p>
+              <p><strong>Tabela 3 — Coletores prediais:</strong> para i=1,0%: DN100→180 UHC; DN150→700; DN200→1600.</p>
+              <p><strong>Tabela 8 — Ramais de ventilação (com vaso):</strong> UHC ≤17→DN50; 18–60→DN75.</p>
+              <p><strong>Tabela 7 — Dist. máx. desconector → ventilador:</strong> DN40→1,0m; DN50→1,2m; DN75→1,8m; DN100→2,4m.</p>
+            </div>
+          </details>
+
+          <div class="resultado hidden" id="resultado-predial"></div>
+        </div>
+      </div><!-- .calc-grid -->
+    </section><!-- #panel-predial -->
+
     <!-- ======================== FOSSA / FILTRO / SUMIDOURO ======================== -->
     <section class="panel" id="panel-fossa" role="tabpanel" aria-labelledby="tab-fossa">
       <div class="panel-header">
@@ -573,37 +687,88 @@
           </h3>
           <form id="form-fossa" onsubmit="return false;">
             <div class="form-group">
-              <label for="fs-n">Número de habitantes (N)</label>
-              <input type="number" id="fs-n" min="1" value="5" placeholder="ex: 5" />
-            </div>
-            <div class="form-group">
-              <label for="fs-c">Contribuição per capita (C) — L/hab·dia</label>
-              <input type="number" id="fs-c" min="50" value="160" placeholder="ex: 160" />
-              <small class="hint">NBR 7229 Tabela 2: Residência = 160 L/hab·dia</small>
-            </div>
-            <div class="form-group">
-              <label for="fs-t">Tempo de detenção (T) — dias</label>
-              <input type="number" id="fs-t" step="0.1" min="0.5" value="1.0" placeholder="ex: 1.0" />
-              <small class="hint">NBR 7229 Tabela 3: mínimo 1,0 dia para ≤5 hab</small>
-            </div>
-            <div class="form-group">
-              <label for="fs-k">Intervalo entre limpezas (K)</label>
-              <select id="fs-k">
-                <option value="57">1 ano — K = 57 dias</option>
-                <option value="95" selected>2 anos — K = 95 dias</option>
-                <option value="132">3 anos — K = 132 dias</option>
+              <label for="fs-tipo">Tipo / padrão de edificação (Tabela 9 — NBR 7229)</label>
+              <select id="fs-tipo" onchange="atualizarContribuicaoFossa()">
+                <optgroup label="Permanentes">
+                  <option value="0">Residência padrão alto — q=160 L/hab·dia</option>
+                  <option value="1" selected>Residência padrão médio — q=130 L/hab·dia</option>
+                  <option value="2">Residência padrão baixo — q=100 L/hab·dia</option>
+                  <option value="3">Hotel (s/ lavanderia) — q=100</option>
+                  <option value="4">Hotel (c/ cozinha + lavanderia) — q=240</option>
+                  <option value="5">Hotel (c/ coz. + lav. + banheiro) — q=360</option>
+                  <option value="6">Alojamento provisório — q=80</option>
+                  <option value="7">Orfanato / Asilo — q=120</option>
+                  <option value="8">Escola (internato) — q=150</option>
+                  <option value="9">Presídio — q=240</option>
+                  <option value="10">Quartel — q=120</option>
+                  <option value="11">Área rural — q=100</option>
+                </optgroup>
+                <optgroup label="Temporários">
+                  <option value="12">Fábrica geral — q=70</option>
+                  <option value="13">Escritório — q=50</option>
+                  <option value="14">Edifício público / comercial — q=50</option>
+                  <option value="15">Escola (meio período) — q=50</option>
+                  <option value="16">Escola (período integral) — q=100</option>
+                  <option value="17">Creche — q=50</option>
+                  <option value="18">Bar — q=6 / lugar</option>
+                  <option value="19">Restaurante — q=25 / lugar</option>
+                  <option value="20">Cinema / Teatro / Templo — q=2 / lugar</option>
+                  <option value="21">Ambulatório — q=25 / consulta</option>
+                  <option value="22">Estação ferro/rodoviária — q=25 / passageiro</option>
+                  <option value="23">Sanitário público — q=480 / bacia</option>
+                </optgroup>
               </select>
-              <small class="hint">NBR 7229 Tabela 5 — taxa de acumulação de lodo</small>
+              <small class="hint" id="fs-tipo-hint">Permanente — Unidade: habitante — q = 130 L/un·dia | Lf = 1,0 L/un·dia</small>
             </div>
-            <div class="form-group">
-              <label for="fs-lf">Contrib. de lodo fresco (Lf) — L/hab·dia</label>
-              <input type="number" id="fs-lf" step="0.1" min="0.5" value="1.0" placeholder="ex: 1.0" />
-              <small class="hint">NBR 7229: valor típico = 1,0 L/hab·dia</small>
+            <div class="form-row-3">
+              <div class="form-group">
+                <label for="fs-n">Número de pessoas / unidades (N)</label>
+                <input type="number" id="fs-n" min="1" value="5" placeholder="ex: 5" />
+              </div>
+              <div class="form-group">
+                <label for="fs-q">Contrib. per capita (q) — L/un·dia</label>
+                <input type="number" id="fs-q" min="1" value="130" placeholder="ex: 130" />
+                <small class="hint">Preenchido automaticamente pela Tabela 9</small>
+              </div>
+              <div class="form-group">
+                <label for="fs-lf">Lodo fresco (Lf) — L/un·dia</label>
+                <input type="number" id="fs-lf" step="0.01" min="0.01" value="1.0" placeholder="ex: 1.0" />
+                <small class="hint">Preenchido automaticamente pela Tabela 9</small>
+              </div>
+            </div>
+            <div class="form-row-3">
+              <div class="form-group">
+                <label for="fs-temp">Temperatura do mês mais frio</label>
+                <select id="fs-temp">
+                  <option value="frio">≤ 10°C — fria</option>
+                  <option value="medio" selected>10 a 25°C — temperada</option>
+                  <option value="quente">&gt; 25°C — quente</option>
+                </select>
+                <small class="hint">Define T (Tab. 13) e K (Tab. 11)</small>
+              </div>
+              <div class="form-group">
+                <label for="fs-anos">Intervalo entre limpezas</label>
+                <select id="fs-anos">
+                  <option value="1">1 ano</option>
+                  <option value="2" selected>2 anos</option>
+                  <option value="3">3 anos</option>
+                  <option value="4">4 anos</option>
+                  <option value="5">5 anos</option>
+                </select>
+                <small class="hint">Define K pela Tabela 11</small>
+              </div>
+              <div class="form-group">
+                <label for="fs-formato">Formato da fossa</label>
+                <select id="fs-formato">
+                  <option value="retangular" selected>Prismático retangular (L=2B)</option>
+                  <option value="circular">Cilíndrico (circular)</option>
+                </select>
+              </div>
             </div>
             <div class="form-group">
               <label for="fs-h">Altura útil adotada (H) — m</label>
               <input type="number" id="fs-h" step="0.1" min="1.0" value="1.5" placeholder="ex: 1.5" />
-              <small class="hint">NBR 7229: mínimo 1,20 m; recomendado 1,50 m</small>
+              <small class="hint">NBR 7229 Tab. 12: 1,20–2,20 m (V ≤6 m³); 1,50–2,50 m (6–10 m³); 1,80–2,80 m (>10 m³)</small>
             </div>
             <button class="btn-calc" onclick="calcularFossaSeptica()">Calcular fossa séptica</button>
           </form>
@@ -611,20 +776,29 @@
           <details class="explicacao">
             <summary>&#9432; Fórmulas e dados de referência (NBR 7229)</summary>
             <div class="explicacao-corpo">
-              <p><strong>Volume da fossa séptica:</strong></p>
-              <div class="formula-box">V = N × (C × T + K × Lf) / 1000 &nbsp;[m³]</div>
+              <p><strong>Volume da fossa séptica (NBR 7229):</strong></p>
+              <div class="formula-box">V = 1000 + N × (q × T + K × Lf)  [litros]</div>
               <table class="ref-table">
-                <tr><th>Variável</th><th>Descrição</th><th>Valor típico residencial</th></tr>
-                <tr><td>N</td><td>Número de pessoas</td><td>—</td></tr>
-                <tr><td>C</td><td>Contribuição per capita de esgoto (L/hab·dia)</td><td>160</td></tr>
-                <tr><td>T</td><td>Tempo de detenção (dias)</td><td>1,0 (≤5 hab)</td></tr>
-                <tr><td>K</td><td>Taxa de acumulação de lodo (dias)</td><td>57 / 95 / 132</td></tr>
-                <tr><td>Lf</td><td>Contribuição de lodo fresco (L/hab·dia)</td><td>1,0</td></tr>
+                <tr><th>Variável</th><th>Descrição</th><th>Fonte</th></tr>
+                <tr><td>N</td><td>Número de pessoas/unidades</td><td>—</td></tr>
+                <tr><td>q</td><td>Contribuição per capita de esgoto (L/un·dia)</td><td>Tabela 9 — NBR 7229</td></tr>
+                <tr><td>T</td><td>Tempo de detenção hidráulica (dias)</td><td>Tabela 13 — por vazão × temperatura</td></tr>
+                <tr><td>K</td><td>Taxa de acumulação de lodo (dias)</td><td>Tabela 11 — por anos × temperatura</td></tr>
+                <tr><td>Lf</td><td>Contribuição de lodo fresco (L/un·dia)</td><td>Tabela 9 — NBR 7229</td></tr>
               </table>
-              <p><strong>Dimensões (câmara retangular):</strong></p>
-              <div class="formula-box">L = V / (B × H) &nbsp;&nbsp; B = L / 2 &nbsp;(proporção 1:2)</div>
-              <p><strong>Volume mínimo (NBR 7229 Tabela 4):</strong> 1.500 L para N ≤ 5 pessoas.</p>
-              <p><strong>Alturas mínimas:</strong> H_util ≥ 1,20 m; H_total = H_util + 0,30 m (borda livre).</p>
+              <p><strong>Tabela 11 — K (dias) por anos de limpeza × temperatura:</strong></p>
+              <table class="ref-table">
+                <tr><th>Anos</th><th>≤10°C</th><th>10–20°C</th><th>&gt;20°C</th></tr>
+                <tr><td>1</td><td>94</td><td>65</td><td>57</td></tr>
+                <tr><td>2</td><td>134</td><td>105</td><td>97</td></tr>
+                <tr><td>3</td><td>174</td><td>145</td><td>137</td></tr>
+                <tr><td>4</td><td>214</td><td>185</td><td>177</td></tr>
+                <tr><td>5</td><td>254</td><td>225</td><td>217</td></tr>
+              </table>
+              <p><strong>Dimensões retangulares:</strong> L = 2B; B = √(V / (2H))</p>
+              <p><strong>Dimensões circulares:</strong> D = √(4V / (π × H))</p>
+              <p><strong>Volume mínimo (NBR 7229):</strong> 1.500 L para N ≤ 5; 2.500 L para N &gt; 5.</p>
+              <p><strong>Tabela 12 — Profundidade útil admissível:</strong> V ≤6 m³: 1,20–2,20m; 6–10 m³: 1,50–2,50m; &gt;10 m³: 1,80–2,80m.</p>
             </div>
           </details>
 
@@ -699,21 +873,49 @@
               <input type="number" id="su-q" min="10" value="800" placeholder="ex: 800" />
               <small class="hint">Vazão efluente do filtro anaeróbio</small>
             </div>
+
+            <!-- Seleção do método para taxa de infiltração -->
             <div class="form-group">
-              <label for="su-solo">Tipo de solo (taxa de infiltração)</label>
-              <select id="su-solo" onchange="atualizarTaxaInfiltracao()">
-                <option value="60">Areia grossa / pedregulho — 60 L/m²·dia</option>
-                <option value="40" selected>Areia fina / areia média — 40 L/m²·dia</option>
-                <option value="25">Areia argilosa / silte arenoso — 25 L/m²·dia</option>
-                <option value="15">Silte argiloso / argila arenosa — 15 L/m²·dia</option>
-                <option value="8">Argila / argila siltosa — 8 L/m²·dia</option>
+              <label for="su-modo">Método para taxa de infiltração</label>
+              <select id="su-modo" onchange="atualizarModoSumidouro()">
+                <option value="solo" selected>Por tipo de solo (tabela simplificada)</option>
+                <option value="perc">Por ensaio de percolação in loco (Tabela 14 — NBR 13969)</option>
               </select>
             </div>
-            <div class="form-group">
-              <label for="su-taxa">Taxa de infiltração (i) — L/m²·dia</label>
-              <input type="number" id="su-taxa" min="1" value="40" placeholder="ex: 40" />
-              <small class="hint">Ajuste conforme ensaio de percolação in loco (NBR 13969)</small>
+
+            <!-- Bloco solo -->
+            <div id="su-bloco-solo">
+              <div class="form-group">
+                <label for="su-solo">Tipo de solo</label>
+                <select id="su-solo" onchange="atualizarTaxaInfiltracao()">
+                  <option value="60">Areia grossa / pedregulho — 60 L/m²·dia</option>
+                  <option value="40" selected>Areia fina / areia média — 40 L/m²·dia</option>
+                  <option value="25">Areia argilosa / silte arenoso — 25 L/m²·dia</option>
+                  <option value="15">Silte argiloso / argila arenosa — 15 L/m²·dia</option>
+                  <option value="8">Argila / argila siltosa — 8 L/m²·dia</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="su-taxa">Taxa de infiltração (i) — L/m²·dia</label>
+                <input type="number" id="su-taxa" min="1" value="40" placeholder="ex: 40" />
+                <small class="hint">Pode ajustar manualmente</small>
+              </div>
             </div>
+
+            <!-- Bloco ensaio de percolação -->
+            <div id="su-bloco-perc" style="display:none">
+              <div class="form-group">
+                <label for="su-perc-taxa">Taxa de percolação do ensaio — min/m</label>
+                <input type="number" id="su-perc-taxa" min="1" placeholder="ex: 80" oninput="calcularTaxaPercolacaoSumidouro()" />
+                <small class="hint">Tempo para o nível d'água descer 1 m no ensaio (NBR 13969 Anexo A)</small>
+              </div>
+              <div class="form-group">
+                <label for="su-perc-aplic">Taxa de aplicação superficial (i) — L/m²·dia</label>
+                <input type="number" id="su-perc-aplic" readonly placeholder="calculado automaticamente" style="background:#f3f4f6" />
+                <small class="hint">Convertida pela Tabela 14 — NBR 13969 (interpolação linear)</small>
+              </div>
+            </div>
+
             <div class="form-group">
               <label for="su-tipo">Tipo de sumidouro</label>
               <select id="su-tipo">
@@ -743,13 +945,18 @@
               <div class="formula-box">A_lat = π × D × H &nbsp;→&nbsp; H = A / (π × D) &nbsp;[m]</div>
               <p><strong>Vala de infiltração (área de fundo):</strong></p>
               <div class="formula-box">A_fundo = B × L &nbsp;→&nbsp; L = A / B &nbsp;[m]</div>
+              <p><strong>Tabela 14 — Taxa de percolação → taxa de aplicação superficial:</strong></p>
               <table class="ref-table">
-                <tr><th>Tipo de solo</th><th>Taxa i (L/m²·dia)</th></tr>
-                <tr><td>Areia grossa / pedregulho</td><td>60</td></tr>
-                <tr><td>Areia fina / areia média</td><td>40</td></tr>
-                <tr><td>Areia argilosa / silte arenoso</td><td>25</td></tr>
-                <tr><td>Silte argiloso / argila arenosa</td><td>15</td></tr>
-                <tr><td>Argila / argila siltosa</td><td>8</td></tr>
+                <tr><th>Taxa percolação (min/m)</th><th>Taxa aplicação (m³/m²·d)</th><th>Taxa aplicação (L/m²·d)</th></tr>
+                <tr><td>≤ 40</td><td>0,200</td><td>200</td></tr>
+                <tr><td>80</td><td>0,140</td><td>140</td></tr>
+                <tr><td>120</td><td>0,120</td><td>120</td></tr>
+                <tr><td>160</td><td>0,100</td><td>100</td></tr>
+                <tr><td>200</td><td>0,090</td><td>90</td></tr>
+                <tr><td>400</td><td>0,065</td><td>65</td></tr>
+                <tr><td>600</td><td>0,053</td><td>53</td></tr>
+                <tr><td>1200</td><td>0,037</td><td>37</td></tr>
+                <tr><td>2400</td><td>0,024</td><td>24</td></tr>
               </table>
               <p><strong>Distâncias mínimas (NBR 13969):</strong> 3 m de edificações, 15 m de poços d'água, 1,5 m do lençol freático.</p>
               <p><strong>Profundidade máxima do poço:</strong> 3,0 m (NBR 13969 §6.2).</p>
@@ -761,6 +968,25 @@
 
       </div><!-- .calc-grid -->
     </section><!-- #panel-fossa -->
+
+    <!-- ======================== MEMORIAL DE CÁLCULO ======================== -->
+    <section class="panel" id="panel-memorial" role="tabpanel" aria-labelledby="tab-memorial">
+      <div class="panel-header">
+        <h2>Memorial de Cálculo</h2>
+        <p class="panel-desc">Consolida todos os resultados calculados em um documento imprimível. Execute os cálculos nas abas correspondentes antes de gerar o memorial.</p>
+      </div>
+
+      <div class="memorial-actions">
+        <button class="btn-calc" onclick="gerarMemorial()">&#9654; Gerar memorial</button>
+        <button class="btn-calc btn-print" onclick="imprimirMemorial()">&#128438; Gerar PDF / Imprimir</button>
+        <button class="btn-limpar" onclick="limparMemorial()">&#8635; Limpar</button>
+      </div>
+
+      <div id="memorial-conteudo" class="memorial-area">
+        <p class="memorial-aviso">Clique em <strong>Gerar Memorial</strong> para consolidar os resultados de todos os módulos.</p>
+      </div>
+
+    </section><!-- #panel-memorial -->
 
   </main>
 
@@ -788,11 +1014,14 @@
     </div>
   </div>
 
+  <script src="js/tabelas.js"></script>
   <script src="js/calculos-agua.js"></script>
   <script src="js/calculos-esgoto.js"></script>
   <script src="js/calculos-drenagem.js"></script>
   <script src="js/projeto.js"></script>
   <script src="js/calculos-fossa.js"></script>
+  <script src="js/calculos-predial.js"></script>
+  <script src="js/memorial.js"></script>
   <script src="js/app.js"></script>
   <script src="js/pwa.js"></script>
 </body>
