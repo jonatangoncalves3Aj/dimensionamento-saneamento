@@ -29,8 +29,8 @@ function renderizarTabelaAparelhos() {
     <tr>
       <td>${a.nome}</td>
       <td class="text-center">${a.qtd}</td>
-      <td class="text-center">${a.uhc.toFixed(1)}</td>
-      <td class="text-center"><strong>${(a.uhc * a.qtd).toFixed(1)}</strong></td>
+      <td class="text-center">${fmt(a.uhc, 1)}</td>
+      <td class="text-center"><strong>${fmt(a.uhc * a.qtd, 1)}</strong></td>
       <td class="text-center">DN ${a.dnRamal}</td>
       <td class="text-center">
         <button class="btn-remove-ap" onclick="removerAparelho(${i})" title="Remover">&#10005;</button>
@@ -44,7 +44,7 @@ function renderizarTabelaAparelhos() {
 function atualizarUHCTotal() {
   const total = aparelhosPredial.reduce((s, a) => s + a.uhc * a.qtd, 0);
   const el = document.getElementById('predial-uhc-total');
-  if (el) el.textContent = total.toFixed(1);
+  if (el) el.textContent = fmt(total, 1);
 }
 
 /* ── Adicionar aparelho à lista ── */
@@ -137,8 +137,8 @@ function calcularPredial() {
     <tr>
       <td>${a.nome}</td>
       <td class="text-center">${a.qtd}</td>
-      <td class="text-center">${a.uhc.toFixed(1)}</td>
-      <td class="text-center"><strong>${(a.uhc * a.qtd).toFixed(1)}</strong></td>
+      <td class="text-center">${fmt(a.uhc, 1)}</td>
+      <td class="text-center"><strong>${fmt(a.uhc * a.qtd, 1)}</strong></td>
       <td class="text-center">DN ${a.dnRamal}</td>
     </tr>
   `).join('');
@@ -147,7 +147,7 @@ function calcularPredial() {
   el.innerHTML = `
     <h4>Resultados — Esgoto Predial (NBR 8160)</h4>
     <div class="result-main">
-      <div><div class="label">UHC Total</div><div class="value">${totalUHC.toFixed(1)} UHC</div></div>
+      <div><div class="label">UHC Total</div><div class="value">${fmt(totalUHC, 1)} UHC</div></div>
       <div><div class="label">Ramal de Esgoto</div><div class="value">DN ${dnRamal}</div></div>
       <div><div class="label">Tubo de Queda</div><div class="value">DN ${dnQueda}</div></div>
       <div><div class="label">Coletor Predial</div><div class="value">DN ${dnColetor}</div></div>
@@ -162,7 +162,7 @@ function calcularPredial() {
       <tfoot>
         <tr>
           <td colspan="3"><strong>Total</strong></td>
-          <td><strong>${totalUHC.toFixed(1)}</strong></td>
+          <td><strong>${fmt(totalUHC, 1)}</strong></td>
           <td>—</td>
         </tr>
       </tfoot>
@@ -170,7 +170,7 @@ function calcularPredial() {
 
     <h5 class="result-subtitle">Dimensionamento dos Tubos</h5>
     <table class="result-table">
-      <tr><td>UHC total acumulado</td><td>${totalUHC.toFixed(1)} UHC</td></tr>
+      <tr><td>UHC total acumulado</td><td>${fmt(totalUHC, 1)} UHC</td></tr>
       <tr><td>Ramal de esgoto — DN adotado</td><td>DN ${dnRamal} mm <em>(Tab. 5 — NBR 8160)</em></td></tr>
       <tr><td>Tubo de queda — ${pav} pavimento(s)</td><td>DN ${dnQueda} mm <em>(Tab. 4 — NBR 8160)</em>${obsQueda}</td></tr>
       <tr><td>Coletor predial — i = ${fmt(decliv, 1)}%</td><td>DN ${dnColetor} mm <em>(Tab. 3 — NBR 8160)</em>${obsColetor}</td></tr>
