@@ -246,40 +246,250 @@
     <section class="panel" id="panel-agua" role="tabpanel" aria-labelledby="tab-agua">
       <div class="panel-header">
         <h2>Abastecimento de Água — NBR 5626</h2>
-        <p class="panel-desc">Cálculo de demanda, diâmetro de tubulação e perda de carga para sistemas de água fria.</p>
+        <p class="panel-desc">Dimensionamento completo: demanda, reservatórios inferior e superior, bomba de recalque, diâmetro de tubulação, perda de carga e verificação de pressão.</p>
       </div>
 
       <div class="calc-grid">
-        <!-- Demanda -->
+
+        <!-- ── 1. DEMANDA ── -->
         <div class="card">
           <h3 class="card-title">
-            <span class="card-number">1</span>
-            Cálculo da Demanda de Água
+            <span class="nbr-badge">NBR 5626</span>
+            <span class="card-number">1</span> Demanda de Água
           </h3>
           <form id="form-demanda-agua" onsubmit="return false;">
             <div class="form-group">
-              <label for="num-habitantes">Número de habitantes</label>
-              <input type="number" id="num-habitantes" min="1" value="4" placeholder="ex: 4" />
+              <label for="agua-tipo">Tipo de edificação</label>
+              <select id="agua-tipo" onchange="atualizarTipoEdificacaoAgua()">
+                <option value="residencial" selected>Residência unifamiliar — 200 L/hab·dia</option>
+                <option value="apartamento">Apartamento — 150 L/hab·dia</option>
+                <option value="hotel">Hotel — 180 L/hóspede·dia</option>
+                <option value="escola">Escola — 50 L/aluno·dia</option>
+                <option value="escritorio">Escritório — 50 L/func·dia</option>
+                <option value="hospital">Hospital — 500 L/leito·dia</option>
+                <option value="comercio">Comércio / Shopping — 5 L/m²·dia</option>
+                <option value="restaurante">Restaurante — 25 L/refeição</option>
+                <option value="industria">Indústria — 70 L/func·dia</option>
+                <option value="quartel">Quartel / Alojamento — 120 L/hab·dia</option>
+              </select>
             </div>
-            <div class="form-group">
-              <label for="consumo-per-capita">Consumo per capita (L/hab·dia)</label>
-              <input type="number" id="consumo-per-capita" min="1" value="200" placeholder="ex: 200" />
-              <small class="hint">Referência NBR 5626: residências 150–300 L/hab·dia</small>
+            <div class="form-row-3">
+              <div class="form-group">
+                <label for="num-habitantes">Nº habitantes / usuários (N)</label>
+                <input type="number" id="num-habitantes" min="1" value="4" placeholder="ex: 4" />
+              </div>
+              <div class="form-group">
+                <label for="consumo-per-capita">Per capita (L/un·dia)</label>
+                <input type="number" id="consumo-per-capita" min="1" value="200" placeholder="ex: 200" />
+              </div>
+              <div class="form-group">
+                <label for="agua-autonomia">Dias de autonomia</label>
+                <input type="number" id="agua-autonomia" min="1" max="5" value="1" placeholder="ex: 1" />
+                <small class="hint">Típico: 1–2 dias</small>
+              </div>
             </div>
-            <div class="form-group">
-              <label for="reserva-incendio">Reserva de incêndio (L) <span class="optional">(opcional)</span></label>
-              <input type="number" id="reserva-incendio" min="0" value="0" placeholder="ex: 10000" />
+            <div class="form-row-3">
+              <div class="form-group">
+                <label for="agua-k1">K1 (coef. diário)</label>
+                <input type="number" id="agua-k1" step="0.01" min="1" value="1.20" placeholder="1.20" />
+                <small class="hint">NBR 5626: 1,20</small>
+              </div>
+              <div class="form-group">
+                <label for="agua-k2">K2 (coef. horário)</label>
+                <input type="number" id="agua-k2" step="0.01" min="1" value="1.50" placeholder="1.50" />
+                <small class="hint">NBR 5626: 1,50</small>
+              </div>
+              <div class="form-group">
+                <label for="reserva-incendio">Reserva incêndio (L)</label>
+                <input type="number" id="reserva-incendio" min="0" value="0" placeholder="ex: 10000" />
+                <small class="hint">Opcional</small>
+              </div>
             </div>
             <button class="btn-calc" onclick="calcularDemandaAgua()">Calcular Demanda</button>
           </form>
           <div id="resultado-demanda-agua" class="resultado hidden"></div>
         </div>
 
-        <!-- Diâmetro de tubulação -->
+        <!-- ── 2. RESERVATÓRIO INFERIOR ── -->
         <div class="card">
           <h3 class="card-title">
-            <span class="card-number">2</span>
-            Diâmetro da Tubulação (Q = V × A)
+            <span class="nbr-badge">NBR 5626</span>
+            <span class="card-number">2</span> Reservatório Inferior (Cisterna)
+          </h3>
+          <form id="form-reservatorio-inferior" onsubmit="return false;">
+            <div class="form-group">
+              <label for="ri-consumo">Consumo diário total (L/dia)</label>
+              <input type="number" id="ri-consumo" min="10" value="800" placeholder="ex: 800" />
+              <small class="hint">Resultado do cálculo de demanda acima</small>
+            </div>
+            <div class="form-row-3">
+              <div class="form-group">
+                <label for="ri-autonomia">Dias de autonomia</label>
+                <input type="number" id="ri-autonomia" min="1" max="5" value="1" placeholder="1" />
+              </div>
+              <div class="form-group">
+                <label for="ri-perc">Parcela do RI (%)</label>
+                <input type="number" id="ri-perc" min="10" max="100" value="60" placeholder="60" />
+                <small class="hint">Típico: 60% do total</small>
+              </div>
+              <div class="form-group">
+                <label for="ri-incendio">Reserva incêndio (L)</label>
+                <input type="number" id="ri-incendio" min="0" value="0" placeholder="ex: 10000" />
+              </div>
+            </div>
+            <div class="form-row-3">
+              <div class="form-group">
+                <label for="ri-h">Altura útil adotada H (m)</label>
+                <input type="number" id="ri-h" step="0.1" min="0.5" value="2.0" placeholder="ex: 2.0" />
+                <small class="hint">Típico: 1,5 – 3,0 m</small>
+              </div>
+              <div class="form-group">
+                <label for="ri-formato">Formato</label>
+                <select id="ri-formato">
+                  <option value="retangular" selected>Retangular (L=2B)</option>
+                  <option value="circular">Cilíndrico</option>
+                </select>
+              </div>
+            </div>
+            <button class="btn-calc" onclick="calcularReservatorioInferior()">Calcular Cisterna</button>
+          </form>
+          <div id="resultado-reservatorio-inferior" class="resultado hidden"></div>
+        </div>
+
+        <!-- ── 3. RESERVATÓRIO SUPERIOR ── -->
+        <div class="card">
+          <h3 class="card-title">
+            <span class="nbr-badge">NBR 5626</span>
+            <span class="card-number">3</span> Reservatório Superior (Caixa d'Água)
+          </h3>
+          <form id="form-reservatorio-superior" onsubmit="return false;">
+            <div class="form-group">
+              <label for="rs-consumo">Consumo diário total (L/dia)</label>
+              <input type="number" id="rs-consumo" min="10" value="800" placeholder="ex: 800" />
+            </div>
+            <div class="form-row-3">
+              <div class="form-group">
+                <label for="rs-autonomia">Dias de autonomia</label>
+                <input type="number" id="rs-autonomia" min="1" max="5" value="1" placeholder="1" />
+              </div>
+              <div class="form-group">
+                <label for="rs-perc">Parcela do RS (%)</label>
+                <input type="number" id="rs-perc" min="10" max="100" value="40" placeholder="40" />
+                <small class="hint">Típico: 40% do total</small>
+              </div>
+            </div>
+            <div class="form-row-3">
+              <div class="form-group">
+                <label for="rs-h">Altura útil adotada H (m)</label>
+                <input type="number" id="rs-h" step="0.1" min="0.3" value="1.0" placeholder="ex: 1.0" />
+              </div>
+              <div class="form-group">
+                <label for="rs-formato">Formato</label>
+                <select id="rs-formato">
+                  <option value="retangular" selected>Retangular (L=2B)</option>
+                  <option value="circular">Cilíndrico</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="rs-pmin">Pressão mínima no ponto crítico (m.c.a)</label>
+              <select id="rs-pmin">
+                <option value="5" selected>5,0 m.c.a — torneiras (NBR 5626)</option>
+                <option value="10">10,0 m.c.a — chuveiros (NBR 5626)</option>
+                <option value="15">15,0 m.c.a — sistemas pressurizados</option>
+              </select>
+            </div>
+            <div class="form-row-3">
+              <div class="form-group">
+                <label for="rs-hf">Perda de carga na distribuição (m.c.a)</label>
+                <input type="number" id="rs-hf" step="0.1" min="0" value="2.0" placeholder="ex: 2.0" />
+              </div>
+              <div class="form-group">
+                <label for="rs-cota-critica">Cota do ponto crítico (m)</label>
+                <input type="number" id="rs-cota-critica" step="0.1" value="3.0" placeholder="ex: 3.0" />
+                <small class="hint">Saída mais alta e distante</small>
+              </div>
+            </div>
+            <button class="btn-calc" onclick="calcularReservatorioSuperior()">Calcular Caixa d'Água</button>
+          </form>
+          <div id="resultado-reservatorio-superior" class="resultado hidden"></div>
+        </div>
+
+        <!-- ── 4. BOMBA DE RECALQUE ── -->
+        <div class="card">
+          <h3 class="card-title">
+            <span class="nbr-badge">NBR 5626</span>
+            <span class="card-number">4</span> Bomba de Recalque
+          </h3>
+          <form id="form-bomba" onsubmit="return false;">
+            <div class="form-row-3">
+              <div class="form-group">
+                <label for="bom-vol">Volume a recalcar (L/dia)</label>
+                <input type="number" id="bom-vol" min="10" value="800" placeholder="ex: 800" />
+                <small class="hint">Geralmente = consumo diário total</small>
+              </div>
+              <div class="form-group">
+                <label for="bom-top">Tempo de operação (h/dia)</label>
+                <input type="number" id="bom-top" step="0.5" min="0.5" max="20" value="4" placeholder="ex: 4" />
+                <small class="hint">Típico: 4 – 6 h/dia</small>
+              </div>
+            </div>
+            <div class="form-row-3">
+              <div class="form-group">
+                <label for="bom-hg">Altura geométrica Hg (m)</label>
+                <input type="number" id="bom-hg" step="0.5" min="0.5" value="10" placeholder="ex: 10" />
+                <small class="hint">Nível RI → nível RS</small>
+              </div>
+              <div class="form-group">
+                <label for="bom-hf">Perdas na linha de recalque (m.c.a)</label>
+                <input type="number" id="bom-hf" step="0.1" min="0" value="3" placeholder="ex: 3" />
+                <small class="hint">Hazen-Williams (Card 6)</small>
+              </div>
+              <div class="form-group">
+                <label for="bom-hz-suc">Altura de sucção hz (m)</label>
+                <input type="number" id="bom-hz-suc" step="0.1" min="0" value="2" placeholder="ex: 2" />
+                <small class="hint">Bomba → nível RI (para NPSH)</small>
+              </div>
+            </div>
+            <div class="form-row-3">
+              <div class="form-group">
+                <label for="bom-eta-b">Rendimento bomba η_b (%)</label>
+                <input type="number" id="bom-eta-b" min="30" max="95" value="70" placeholder="70" />
+                <small class="hint">Típico: 60–75%</small>
+              </div>
+              <div class="form-group">
+                <label for="bom-eta-m">Rendimento motor η_m (%)</label>
+                <input type="number" id="bom-eta-m" min="50" max="99" value="90" placeholder="90" />
+                <small class="hint">Típico: 85–92%</small>
+              </div>
+              <div class="form-group">
+                <label for="bom-fs">Fator de segurança</label>
+                <input type="number" id="bom-fs" step="0.05" min="1" max="2" value="1.20" placeholder="1.20" />
+                <small class="hint">Típico: 1,15 – 1,25</small>
+              </div>
+            </div>
+            <button class="btn-calc" onclick="calcularBomba()">Calcular Bomba</button>
+          </form>
+
+          <details class="explicacao">
+            <summary>&#9432; Fórmulas — Bomba de Recalque</summary>
+            <div class="explicacao-corpo">
+              <div class="formula-box">Q_bomba = V_diário / (T_op × 3600) &nbsp;[m³/s]</div>
+              <div class="formula-box">Hm = Hg + hf_recalque + perdas locais &nbsp;[m.c.a]</div>
+              <div class="formula-box">P_hidráulica = ρ × g × Q × Hm &nbsp;[W]</div>
+              <div class="formula-box">P_motor = P_hid / (η_bomba × η_motor) × fs &nbsp;[W]</div>
+              <div class="formula-box">NPSHd = 10,33 − Pv − hz − hf_sucção &nbsp;[m]</div>
+              <p>1 CV = 735,5 W | Rendimento total típico: 55–65%</p>
+            </div>
+          </details>
+          <div id="resultado-bomba" class="resultado hidden"></div>
+        </div>
+
+        <!-- ── 5. DIÂMETRO DE TUBULAÇÃO ── -->
+        <div class="card">
+          <h3 class="card-title">
+            <span class="nbr-badge">NBR 5626</span>
+            <span class="card-number">5</span> Diâmetro da Tubulação (Q = V × A)
           </h3>
           <form id="form-diametro-agua" onsubmit="return false;">
             <div class="form-group">
@@ -296,27 +506,28 @@
           <div id="resultado-diametro-agua" class="resultado hidden"></div>
         </div>
 
-        <!-- Perda de carga Hazen-Williams -->
+        <!-- ── 6. HAZEN-WILLIAMS ── -->
         <div class="card">
           <h3 class="card-title">
-            <span class="card-number">3</span>
-            Perda de Carga — Hazen-Williams
+            <span class="card-number">6</span> Perda de Carga — Hazen-Williams
           </h3>
           <form id="form-hazen" onsubmit="return false;">
             <div class="form-group">
               <label for="hw-vazao">Vazão Q (L/s)</label>
               <input type="number" id="hw-vazao" step="0.01" min="0.01" value="0.5" placeholder="ex: 0.5" />
             </div>
-            <div class="form-group">
-              <label for="hw-diametro">Diâmetro interno D (mm)</label>
-              <input type="number" id="hw-diametro" step="0.1" min="1" value="50" placeholder="ex: 50" />
+            <div class="form-row-3">
+              <div class="form-group">
+                <label for="hw-diametro">Diâmetro interno D (mm)</label>
+                <input type="number" id="hw-diametro" step="0.1" min="1" value="50" placeholder="ex: 50" />
+              </div>
+              <div class="form-group">
+                <label for="hw-comprimento">Comprimento L (m)</label>
+                <input type="number" id="hw-comprimento" step="0.1" min="0.1" value="10" placeholder="ex: 10" />
+              </div>
             </div>
             <div class="form-group">
-              <label for="hw-comprimento">Comprimento L (m)</label>
-              <input type="number" id="hw-comprimento" step="0.1" min="0.1" value="10" placeholder="ex: 10" />
-            </div>
-            <div class="form-group">
-              <label for="hw-c">Coeficiente C de Hazen-Williams</label>
+              <label for="hw-c">Coeficiente C (Hazen-Williams)</label>
               <select id="hw-c">
                 <option value="150">150 — PVC (novo)</option>
                 <option value="140">140 — PVC (usado) / Cobre</option>
@@ -330,6 +541,47 @@
           </form>
           <div id="resultado-hazen" class="resultado hidden"></div>
         </div>
+
+        <!-- ── 7. PRESSÃO NO PONTO CRÍTICO ── -->
+        <div class="card">
+          <h3 class="card-title">
+            <span class="nbr-badge">NBR 5626</span>
+            <span class="card-number">7</span> Pressão no Ponto Crítico
+          </h3>
+          <form id="form-pressao-critica" onsubmit="return false;">
+            <div class="form-group">
+              <label for="pc-h-caixa">Elevação do fundo da caixa d'água (m)</label>
+              <input type="number" id="pc-h-caixa" step="0.1" value="12.0" placeholder="ex: 12.0" />
+              <small class="hint">Cota absoluta ou relativa ao mesmo referencial</small>
+            </div>
+            <div class="form-group">
+              <label for="pc-cota-critica">Cota do ponto crítico mais desfavorável (m)</label>
+              <input type="number" id="pc-cota-critica" step="0.1" value="3.0" placeholder="ex: 3.0" />
+              <small class="hint">Saída mais alta e/ou mais distante do reservatório</small>
+            </div>
+            <div class="form-group">
+              <label for="pc-hf">Perda de carga total na distribuição hf (m.c.a)</label>
+              <input type="number" id="pc-hf" step="0.1" min="0" value="2.0" placeholder="ex: 2.0" />
+            </div>
+            <button class="btn-calc" onclick="calcularPressaoCritica()">Verificar Pressão</button>
+          </form>
+
+          <details class="explicacao">
+            <summary>&#9432; Critérios de pressão — NBR 5626</summary>
+            <div class="explicacao-corpo">
+              <div class="formula-box">P_disp = H_caixa − cota_crítica − hf &nbsp;[m.c.a]</div>
+              <table class="ref-table">
+                <tr><th>Situação</th><th>Pressão NBR 5626</th></tr>
+                <tr><td>Torneiras em geral (mínima)</td><td>5,0 m.c.a</td></tr>
+                <tr><td>Chuveiros (mínima)</td><td>10,0 m.c.a</td></tr>
+                <tr><td>Máxima qualquer ponto</td><td>40,0 m.c.a</td></tr>
+                <tr><td>Máxima em unidade autônoma</td><td>20,0 m.c.a</td></tr>
+              </table>
+            </div>
+          </details>
+          <div id="resultado-pressao-critica" class="resultado hidden"></div>
+        </div>
+
       </div>
     </section>
 

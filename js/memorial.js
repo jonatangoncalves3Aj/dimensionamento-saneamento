@@ -18,9 +18,13 @@ function gerarMemorial() {
 
   // ── Coletar resultados de cada módulo ──
   const modulos = [
-    { id: 'resultado-demanda-agua',    titulo: 'Água Fria — Demanda (NBR 5626)'              },
-    { id: 'resultado-diametro-agua',   titulo: 'Água Fria — Diâmetro de Tubulação'           },
-    { id: 'resultado-hazen',           titulo: 'Água Fria — Perda de Carga (Hazen-Williams)' },
+    { id: 'resultado-demanda-agua',           titulo: 'Água Fria — Demanda (NBR 5626)'              },
+    { id: 'resultado-reservatorio-inferior',  titulo: 'Água Fria — Reservatório Inferior (Cisterna)'},
+    { id: 'resultado-reservatorio-superior',  titulo: 'Água Fria — Reservatório Superior (RS)'      },
+    { id: 'resultado-bomba',                  titulo: 'Água Fria — Bomba de Recalque'               },
+    { id: 'resultado-diametro-agua',          titulo: 'Água Fria — Diâmetro de Tubulação'           },
+    { id: 'resultado-hazen',                  titulo: 'Água Fria — Perda de Carga (Hazen-Williams)' },
+    { id: 'resultado-pressao-critica',        titulo: 'Água Fria — Pressão no Ponto Crítico'        },
     { id: 'resultado-esgoto',          titulo: 'Esgotamento Sanitário (NBR 9649)'            },
     { id: 'resultado-drenagem',        titulo: 'Drenagem Pluvial (NBR 10844)'                },
     { id: 'resultado-predial',         titulo: 'Esgoto Predial — UHC (NBR 8160)'            },
