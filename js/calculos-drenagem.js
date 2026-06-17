@@ -217,3 +217,278 @@ function calcularTubulacaoPluvial() {
     <p class="status-msg">${msgs.join('<br>')}</p>
     <p class="status-msg">&#9432; Galerias pluviais são projetadas para escoamento a seção plena (NBR 10844).</p>`;
 }
+
+/* ============================================================
+   4. TEMPO DE CONCENTRAÇÃO — KIRPICH
+   ============================================================ */
+function calcularTempoConcent() {
+  const L  = parseFloat(document.getElementById('tc-l').value);   // m
+  const H  = parseFloat(document.getElementById('tc-h').value);   // m (desnível)
+  const el = document.getElementById('resultado-tc');
+
+  if (!L || !H || L <= 0 || H <= 0) {
+    mostrarErro(el, 'Informe o comprimento e desnível do talvegue com valores positivos.');
+    return;
+  }
+
+  // Kirpich (1940): tc = 57 × (L³/H)^0,385    [min]  — bacia rural
+  const tc_kirpich = 57 * Math.pow((L * L * L) / H, 0.385) / 60;  // min  (L em m, H em m)
+
+  // Temez (1978) — versão espanhola, usada no Brasil para bacias urbanas:
+  // tc = 0,3 × (L / I^0,25)^0,76   (L em km, I = H/L)
+  const Lkm = L / 1000;
+  const I_bacia = H / L;
+  const tc_temez = 0.3 * Math.pow(Lkm / Math.pow(I_bacia, 0.25), 0.76) * 60;  // min
+
+  const tc_adot = Math.max(tc_kirpich, 5);  // mín 5 min (NBR 10844)
+
+  el.className = 'resultado resultado-ok';
+  el.innerHTML = `
+    <h4>Resultados — Tempo de Concentração</h4>
+    <div class="result-main">
+      <div><div class="label">Tc (Kirpich)</div><div class="value">${fmt(tc_kirpich, 2)} min</div></div>
+      <div><div class="label">Tc adotado</div><div class="value">${fmt(tc_adot, 2)} min</div></div>
+    </div>
+    <table class="result-table">
+      <tr><td>Comprimento do talvegue principal (L)</td><td>${fmt(L, 1)} m = ${fmt(Lkm, 3)} km</td></tr>
+      <tr><td>Desnível total da bacia (H)</td><td>${fmt(H, 2)} m</td></tr>
+      <tr><td>Declividade média (I = H/L)</td><td>${fmt(I_bacia * 100, 3)}%</td></tr>
+      <tr><td>Tc — Kirpich (bacia rural/mista)</td><td>${fmt(tc_kirpich, 2)} min</td></tr>
+      <tr><td>Tc — Temez (bacia urbana)</td><td>${fmt(tc_temez, 2)} min</td></tr>
+      <tr><td><strong>Tc adotado (≥ 5 min — NBR 10844)</strong></td><td><strong>${fmt(tc_adot, 2)} min</strong></td></tr>
+    </table>
+    <p class="status-msg">&#9432; Use o Tc obtido como entrada no cálculo de Intensidade IDF (Card 2). NBR 10844: Tc mínimo = 5 min para áreas impermeáveis.</p>`;
+}
+
+/* ============================================================
+   5. ÁREA DE CONTRIBUIÇÃO E VAZÃO (NBR 10844)
+   ============================================================ */
+// Estado das superfícies adicionadas
+let superficiesDrenagem = [];
+
+function adicionarSuperficieDrenagem() {
+  const a = parseFloat(document.getElementById('ac-a').value);     // m
+  const b = parseFloat(document.getElementById('ac-b').value);     // m
+  const h = parseFloat(document.getElementById('ac-h').value) || 0; // m desnível do telhado
+  const C = parseFloat(document.getElementById('ac-c').value);
+  if (!a || !b || !C || a <= 0 || b <= 0 || C <= 0) {
+    alert('Preencha a, b e coeficiente de escoamento C.'); return;
+  }
+  // Área horizontal projetada + projeção do telhado inclinado: A = (a + h/2) × b
+  const A_neta = (a + h / 2) * b;
+  superficiesDrenagem.push({ a, b, h, C, A_neta });
+  renderizarSuperficiesDrenagem();
+}
+
+function removerSuperficieDrenagem(i) {
+  superficiesDrenagem.splice(i, 1);
+  renderizarSuperficiesDrenagem();
+}
+
+function renderizarSuperficiesDrenagem() {
+  const tbody = document.getElementById('ac-tbody');
+  if (!tbody) return;
+  if (superficiesDrenagem.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" class="predial-empty">Nenhuma superfície adicionada.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = superficiesDrenagem.map((s, i) => `
+    <tr>
+      <td class="text-center">${fmt(s.a, 1)}</td>
+      <td class="text-center">${fmt(s.b, 1)}</td>
+      <td class="text-center">${fmt(s.h, 1)}</td>
+      <td class="text-center">${fmt(s.C, 2)}</td>
+      <td class="text-center"><strong>${fmt(s.A_neta, 2)}</strong></td>
+      <td class="text-center"><button class="btn-remove-ap" onclick="removerSuperficieDrenagem(${i})" title="Remover">&#10005;</button></td>
+    </tr>`).join('');
+}
+
+function calcularAreaContribuicao() {
+  const i_chuva = parseFloat(document.getElementById('ac-i').value);  // mm/h
+  const el      = document.getElementById('resultado-ac');
+
+  if (superficiesDrenagem.length === 0) {
+    mostrarErro(el, 'Adicione ao menos uma superfície.'); return;
+  }
+  if (!i_chuva || i_chuva <= 0) {
+    mostrarErro(el, 'Informe a intensidade de chuva (mm/h).'); return;
+  }
+
+  // A × C ponderado
+  const sumAC = superficiesDrenagem.reduce((s, x) => s + x.A_neta * x.C, 0);
+  const sumA  = superficiesDrenagem.reduce((s, x) => s + x.A_neta, 0);
+  const C_med = sumAC / sumA;
+  // Q = i × (sumAC) / 60.000   [L/s]    (i em mm/h, A em m²)
+  const Q_Ls  = i_chuva * sumAC / 60000;
+
+  el.className = 'resultado resultado-ok';
+  el.innerHTML = `
+    <h4>Resultados — Área de Contribuição (NBR 10844)</h4>
+    <div class="result-main">
+      <div><div class="label">Área total efetiva</div><div class="value">${fmt(sumAC / C_med, 2)} m²</div></div>
+      <div><div class="label">Vazão Q</div><div class="value">${fmt(Q_Ls, 4)} L/s</div></div>
+    </div>
+    <table class="result-table">
+      <tr><td>Nº de superfícies</td><td>${superficiesDrenagem.length}</td></tr>
+      <tr><td>Área total (soma)</td><td>${fmt(sumA, 2)} m²</td></tr>
+      <tr><td>Σ(A × C) ponderado</td><td>${fmt(sumAC, 2)} m²</td></tr>
+      <tr><td>C médio ponderado</td><td>${fmt(C_med, 3)}</td></tr>
+      <tr><td>Intensidade de chuva (i)</td><td>${fmt(i_chuva)} mm/h</td></tr>
+      <tr><td>Fórmula: Q = i × Σ(A×C) / 60.000</td><td><strong>Q = ${fmt(Q_Ls, 5)} L/s</strong></td></tr>
+    </table>
+    <p class="status-msg">&#9432; NBR 10844: área inclinada = (a + h/2) × b; projeção da cobertura inclui área sobreposta ao beiral.</p>`;
+}
+
+/* ============================================================
+   6. CALHAS (NBR 10844)
+   ============================================================ */
+function calcularCalha() {
+  const Q   = parseFloat(document.getElementById('cal-q').value);       // L/min
+  const sec = document.getElementById('cal-sec').value;                 // 'semi'|'rect'
+  const I   = parseFloat(document.getElementById('cal-i').value) / 100; // converte % para m/m
+  const n   = 0.011;  // n Manning para calhas de zinco/alumínio/PVC pintado
+  const el  = document.getElementById('resultado-calha');
+
+  if (!Q || !I || Q <= 0 || I <= 0) {
+    mostrarErro(el, 'Preencha a vazão e a declividade com valores positivos.');
+    return;
+  }
+
+  const Qm3s = Q / 60000;  // L/min → m³/s
+
+  // Capacidades por DN (NBR 10844 Tabela 1 — calha semicircular horizontal, n=0,011, I=0,5%)
+  // Valores de capacidade retirados da Tabela 1 da NBR 10844
+  const TAB_CALHA_SEMI = [
+    { dn: 100, Q_ref: 3.3 },    // L/min (i=0,5%, n=0,011)
+    { dn: 125, Q_ref: 5.8 },
+    { dn: 150, Q_ref: 9.1 },
+    { dn: 200, Q_ref: 18.4 },
+  ];
+
+  // Ajuste de capacidade pela declividade real vs referência (0,5% = 0,005 m/m)
+  // Q ∝ I^0,5  →  Q_real = Q_ref × sqrt(I / 0.005)
+  const fator_I = Math.sqrt(I / 0.005);
+
+  if (sec === 'semi') {
+    const dnAdot = TAB_CALHA_SEMI.find(r => r.Q_ref * fator_I >= Q);
+    const dnSel  = dnAdot ? dnAdot.dn : '>200 (usar condutor maior ou dividir área)';
+    const capAdot = dnAdot ? fmt(dnAdot.Q_ref * fator_I, 1) : '—';
+
+    el.className = 'resultado resultado-ok';
+    el.innerHTML = `
+      <h4>Resultados — Calha Semicircular (NBR 10844)</h4>
+      <div class="result-main">
+        <div><div class="label">DN adotado</div><div class="value">${typeof dnSel === 'number' ? 'DN ' + dnSel + ' mm' : dnSel}</div></div>
+        <div><div class="label">Vazão Q</div><div class="value">${fmt(Q)} L/min</div></div>
+      </div>
+      <table class="result-table">
+        <tr><td>Vazão de projeto Q</td><td>${fmt(Q)} L/min</td></tr>
+        <tr><td>Declividade adotada</td><td>${fmt(I * 100, 2)}% = ${fmt(I, 4)} m/m</td></tr>
+        <tr><td>Fator de ajuste de declividade (√(I/0,5%))</td><td>${fmt(fator_I, 3)}</td></tr>
+        ${TAB_CALHA_SEMI.map(r => `<tr><td>DN ${r.dn} — Capacidade na declividade adotada</td><td>${fmt(r.Q_ref * fator_I, 1)} L/min</td></tr>`).join('')}
+        <tr><td><strong>DN comercial adotado</strong></td><td><strong>${typeof dnSel === 'number' ? 'DN ' + dnSel + ' mm' : dnSel}</strong> — cap. ${capAdot} L/min</td></tr>
+      </table>
+      <p class="status-msg">&#9432; Tabela 1 — NBR 10844: calha semicircular, n = 0,011, I de referência = 0,5%. Capacidade escala com √I.</p>`;
+  } else {
+    // Retangular: dimensionar B e H com H/B = 0,4..0,6
+    // Q = (1/n) × A × R^(2/3) × I^0,5; para retângulo: R = (B×H)/(B+2H)
+    // Adotar H = 0,5×B: R ≈ (0,5B²)/(B+B) = B/4; A = 0,5B²
+    // Q = (1/n) × 0,5B² × (B/4)^(2/3) × I^0,5
+    // B = [Q×n / (0,5 × (1/4)^(2/3) × I^0,5)]^(3/8)
+    const B = Math.pow(Qm3s * n / (0.5 * Math.pow(0.25, 2/3) * Math.pow(I, 0.5)), 3/8) * 1000; // mm
+    const H = 0.5 * B;
+    const bAdot = Math.ceil(B / 10) * 10;
+    const hAdot = Math.ceil(H / 10) * 10 + 30;  // +30 mm borda livre
+
+    el.className = 'resultado resultado-ok';
+    el.innerHTML = `
+      <h4>Resultados — Calha Retangular (NBR 10844)</h4>
+      <div class="result-main">
+        <div><div class="label">Largura B</div><div class="value">${fmt(bAdot)} mm</div></div>
+        <div><div class="label">Altura H (c/ borda)</div><div class="value">${fmt(hAdot)} mm</div></div>
+      </div>
+      <table class="result-table">
+        <tr><td>Vazão de projeto Q</td><td>${fmt(Q)} L/min = ${fmt(Qm3s, 7)} m³/s</td></tr>
+        <tr><td>Declividade</td><td>${fmt(I * 100, 2)}%</td></tr>
+        <tr><td>Largura mínima calculada B</td><td>${fmt(B, 1)} mm</td></tr>
+        <tr><td>Altura lâmina (H = 0,5B)</td><td>${fmt(H, 1)} mm</td></tr>
+        <tr><td><strong>Dimensões adotadas</strong></td><td><strong>B = ${bAdot} mm × H_total = ${hAdot} mm</strong></td></tr>
+      </table>
+      <p class="status-msg">&#9432; Borda livre adotada de 30 mm. NBR 10844: declividade mínima da calha = 0,5%.</p>`;
+  }
+}
+
+/* ============================================================
+   7. CONDUTORES VERTICAIS E HORIZONTAIS (NBR 10844)
+   ============================================================ */
+// Capacidade de condutores verticais por DN (NBR 10844 Tabela 3)
+// Capacidade em L/min por coluna, função do diâmetro
+const TAB_COND_VERT = [
+  { dn: 75,  cap: 86   },
+  { dn: 100, cap: 194  },
+  { dn: 125, cap: 367  },
+  { dn: 150, cap: 617  },
+  { dn: 200, cap: 1351 },
+];
+
+// Capacidade de condutores horizontais por DN × declividade (NBR 10844 Tabela 4)
+const TAB_COND_HORIZ = [
+  { dn:  75, i_0_5: 49,  i_1_0: 69,  i_2_0: 98  },
+  { dn: 100, i_0_5: 109, i_1_0: 154, i_2_0: 218 },
+  { dn: 125, i_0_5: 207, i_1_0: 293, i_2_0: 414 },
+  { dn: 150, i_0_5: 348, i_1_0: 492, i_2_0: 696 },
+  { dn: 200, i_0_5: 762, i_1_0:1078, i_2_0:1524 },
+];
+
+function calcularCondutores() {
+  const Q    = parseFloat(document.getElementById('cv-q').value);   // L/min
+  const tipo = document.getElementById('cv-tipo').value;            // 'vertical'|'horizontal'
+  const declStr = document.getElementById('cv-decl')?.value || '1.0';
+  const el   = document.getElementById('resultado-condutores');
+
+  if (!Q || Q <= 0) {
+    mostrarErro(el, 'Informe a vazão de projeto Q em L/min.');
+    return;
+  }
+
+  if (tipo === 'vertical') {
+    const row = TAB_COND_VERT.find(r => r.cap >= Q);
+    const dn  = row ? row.dn : '>200 mm (dividir em mais de um condutor)';
+    const cap = row ? row.cap : '—';
+
+    el.className = 'resultado resultado-ok';
+    el.innerHTML = `
+      <h4>Resultados — Condutor Vertical (NBR 10844)</h4>
+      <div class="result-main">
+        <div><div class="label">DN adotado</div><div class="value">${typeof dn === 'number' ? 'DN ' + dn + ' mm' : dn}</div></div>
+      </div>
+      <table class="result-table">
+        <tr><td>Vazão de projeto Q</td><td>${fmt(Q)} L/min</td></tr>
+        ${TAB_COND_VERT.map(r => `<tr><td>DN ${r.dn} mm — Capacidade</td><td>${r.cap} L/min</td></tr>`).join('')}
+        <tr><td><strong>DN adotado</strong></td><td><strong>${typeof dn === 'number' ? 'DN ' + dn + ' mm' : dn}</strong> — cap. ${cap} L/min</td></tr>
+      </table>
+      <p class="status-msg">&#9432; Tabela 3 — NBR 10844: capacidade calculada com lâmina = 7/24 × D (regime de saída livre). Prever câmara de inspeção na base.</p>`;
+  } else {
+    const decliv = parseFloat(declStr);
+    const colI   = decliv <= 0.75 ? 'i_0_5' : decliv <= 1.5 ? 'i_1_0' : 'i_2_0';
+    const row    = TAB_COND_HORIZ.find(r => r[colI] >= Q);
+    const dn     = row ? row.dn : '>200 mm';
+    const cap    = row ? row[colI] : '—';
+    const declLabel = { i_0_5: '0,5%', i_1_0: '1,0%', i_2_0: '2,0%' };
+
+    el.className = 'resultado resultado-ok';
+    el.innerHTML = `
+      <h4>Resultados — Condutor Horizontal (NBR 10844)</h4>
+      <div class="result-main">
+        <div><div class="label">DN adotado</div><div class="value">${typeof dn === 'number' ? 'DN ' + dn + ' mm' : dn}</div></div>
+        <div><div class="label">Declividade usada</div><div class="value">${declLabel[colI]}</div></div>
+      </div>
+      <table class="result-table">
+        <tr><td>Vazão de projeto Q</td><td>${fmt(Q)} L/min</td></tr>
+        <tr><td>Declividade adotada</td><td>${decliv}% → coluna ${declLabel[colI]}</td></tr>
+        ${TAB_COND_HORIZ.map(r => `<tr><td>DN ${r.dn} mm — Cap. (${declLabel[colI]})</td><td>${r[colI]} L/min</td></tr>`).join('')}
+        <tr><td><strong>DN adotado</strong></td><td><strong>${typeof dn === 'number' ? 'DN ' + dn + ' mm' : dn}</strong> — cap. ${cap} L/min</td></tr>
+      </table>
+      <p class="status-msg">&#9432; Tabela 4 — NBR 10844. Declividade mínima do condutor horizontal = 0,5%. Coeficiente n = 0,011.</p>`;
+  }
+}

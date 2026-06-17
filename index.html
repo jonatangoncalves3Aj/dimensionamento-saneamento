@@ -51,6 +51,14 @@
       <span class="tab-icon">&#128167;</span>
       Água Fria
     </button>
+    <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-aguaquente" id="tab-aguaquente" onclick="switchTab('aguaquente')">
+      <span class="tab-icon">&#9728;</span>
+      Água Quente
+    </button>
+    <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-incendio" id="tab-incendio" onclick="switchTab('incendio')">
+      <span class="tab-icon">&#128293;</span>
+      Combate a Incêndio
+    </button>
     <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-esgoto" id="tab-esgoto" onclick="switchTab('esgoto')">
       <span class="tab-icon">&#9972;</span>
       Esgotamento Sanitário
@@ -585,6 +593,263 @@
       </div>
     </section>
 
+    <!-- ======================== ÁGUA QUENTE ======================== -->
+    <section class="panel" id="panel-aguaquente" role="tabpanel" aria-labelledby="tab-aguaquente">
+      <div class="panel-header">
+        <h2>Água Quente — NBR 7198</h2>
+        <p class="panel-desc">Demanda de água quente, dimensionamento do sistema de aquecimento (elétrico, gás ou solar) e tubulação de distribuição.</p>
+      </div>
+      <div class="calc-grid">
+
+        <!-- 1. Demanda -->
+        <div class="card">
+          <h3 class="card-title"><span class="nbr-badge">NBR 7198</span><span class="card-number">1</span> Demanda de Água Quente</h3>
+          <form onsubmit="return false;">
+            <div class="form-group">
+              <label for="aq-tipo">Tipo de edificação</label>
+              <select id="aq-tipo" onchange="atualizarTipoEdificacaoAQ()">
+                <option value="residencial" selected>Residência — 45 L/pessoa·dia</option>
+                <option value="apartamento">Apartamento — 40 L/pessoa·dia</option>
+                <option value="hotel">Hotel — 60 L/hóspede·dia</option>
+                <option value="hospital">Hospital — 80 L/leito·dia</option>
+                <option value="escola">Escola — 5 L/aluno·dia</option>
+                <option value="academia">Academia / Vestiário — 30 L/usuário·dia</option>
+                <option value="escritorio">Escritório — 5 L/func·dia</option>
+                <option value="restaurante">Restaurante — 6 L/refeição</option>
+              </select>
+              <small class="hint" id="aq-tipo-hint">L/pessoa·dia a 40°C</small>
+            </div>
+            <div class="form-row-3">
+              <div class="form-group">
+                <label for="aq-n">Nº pessoas / usuários</label>
+                <input type="number" id="aq-n" min="1" value="4" placeholder="ex: 4" />
+              </div>
+              <div class="form-group">
+                <label for="aq-qpc">Per capita AQ (L/un·dia)</label>
+                <input type="number" id="aq-qpc" min="1" value="45" placeholder="ex: 45" />
+              </div>
+            </div>
+            <div class="form-row-3">
+              <div class="form-group">
+                <label for="aq-t-uso">Temperatura de uso (°C)</label>
+                <input type="number" id="aq-t-uso" min="35" max="80" value="40" />
+                <small class="hint">Saída do aquecedor</small>
+              </div>
+              <div class="form-group">
+                <label for="aq-t-fria">Temperatura da água fria (°C)</label>
+                <input type="number" id="aq-t-fria" min="5" max="30" value="22" />
+              </div>
+            </div>
+            <button class="btn-calc" onclick="calcularDemandaAguaQuente()">Calcular Demanda</button>
+          </form>
+          <div id="resultado-aq-demanda" class="resultado hidden"></div>
+        </div>
+
+        <!-- 2. Aquecedor -->
+        <div class="card">
+          <h3 class="card-title"><span class="nbr-badge">NBR 7198</span><span class="card-number">2</span> Aquecedor / Boiler</h3>
+          <form onsubmit="return false;">
+            <div class="form-row-3">
+              <div class="form-group">
+                <label for="aq2-vol">Volume AQ necessário (L/dia)</label>
+                <input type="number" id="aq2-vol" min="1" value="180" placeholder="ex: 180" />
+              </div>
+              <div class="form-group">
+                <label for="aq2-t-uso">Temperatura de uso (°C)</label>
+                <input type="number" id="aq2-t-uso" min="35" max="80" value="40" />
+              </div>
+              <div class="form-group">
+                <label for="aq2-t-fria">Temperatura da AF (°C)</label>
+                <input type="number" id="aq2-t-fria" min="5" max="30" value="22" />
+              </div>
+            </div>
+            <div class="form-row-3">
+              <div class="form-group">
+                <label for="aq2-t-rec">Tempo de recuperação (h)</label>
+                <input type="number" id="aq2-t-rec" step="0.5" min="0.5" value="2" />
+                <small class="hint">Tempo para aquecer o volume</small>
+              </div>
+              <div class="form-group">
+                <label for="aq-tipo-aq">Tipo de aquecedor</label>
+                <select id="aq-tipo-aq" onchange="atualizarTipoAquecedor()">
+                  <option value="eletrico" selected>Elétrico (chuveiro/boiler)</option>
+                  <option value="gas">A gás (GN ou GLP)</option>
+                  <option value="solar">Solar (coletores)</option>
+                </select>
+              </div>
+            </div>
+            <!-- Bloco elétrico -->
+            <div id="aq-bloco-eletrico">
+              <div class="form-group">
+                <label for="aq2-eta-el">Rendimento elétrico (%)</label>
+                <input type="number" id="aq2-eta-el" min="70" max="100" value="95" />
+              </div>
+            </div>
+            <!-- Bloco gás -->
+            <div id="aq-bloco-gas" style="display:none">
+              <div class="form-row-3">
+                <div class="form-group">
+                  <label for="aq2-pcs">PCS do gás (kcal/m³)</label>
+                  <select id="aq2-pcs">
+                    <option value="8500" selected>GN — 8.500 kcal/m³</option>
+                    <option value="6400">GLP — 6.400 kcal/m³ (propano)</option>
+                    <option value="5500">GLP — 5.500 kcal/m³ (butano)</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="aq2-eta-gas">Rendimento térmico (%)</label>
+                  <input type="number" id="aq2-eta-gas" min="50" max="99" value="85" />
+                </div>
+              </div>
+            </div>
+            <!-- Bloco solar -->
+            <div id="aq-bloco-solar" style="display:none">
+              <div class="form-row-3">
+                <div class="form-group">
+                  <label for="aq2-irrad">Irradiação solar H (kWh/m²·dia)</label>
+                  <input type="number" id="aq2-irrad" step="0.1" min="1" value="4.5" />
+                  <small class="hint">Típico BR: 4–6 kWh/m²·dia</small>
+                </div>
+                <div class="form-group">
+                  <label for="aq2-eta-col">Rendimento coletores (%)</label>
+                  <input type="number" id="aq2-eta-col" min="30" max="85" value="60" />
+                </div>
+                <div class="form-group">
+                  <label for="aq2-fs-sol">Fração solar (%)</label>
+                  <input type="number" id="aq2-fs-sol" min="30" max="95" value="70" />
+                  <small class="hint">Energia coberta pelo solar</small>
+                </div>
+              </div>
+            </div>
+            <button class="btn-calc" onclick="calcularAquecedor()">Calcular Aquecedor</button>
+          </form>
+          <div id="resultado-aq-aquecedor" class="resultado hidden"></div>
+        </div>
+
+        <!-- 3. Tubulação AQ -->
+        <div class="card">
+          <h3 class="card-title"><span class="card-number">3</span> Tubulação de Água Quente</h3>
+          <form onsubmit="return false;">
+            <div class="form-group">
+              <label for="aq3-vazao">Vazão de projeto Q (L/s)</label>
+              <input type="number" id="aq3-vazao" step="0.01" min="0.01" value="0.3" placeholder="ex: 0.3" />
+            </div>
+            <div class="form-row-3">
+              <div class="form-group">
+                <label for="aq3-vel">Velocidade V (m/s)</label>
+                <input type="number" id="aq3-vel" step="0.1" min="0.3" max="3" value="1.0" />
+                <small class="hint">Recomendado ≤ 1,5 m/s</small>
+              </div>
+              <div class="form-group">
+                <label for="aq3-material">Material da tubulação</label>
+                <select id="aq3-material">
+                  <option value="cpvc" selected>CPVC</option>
+                  <option value="cobre">Cobre</option>
+                  <option value="pprc">PPR-C (polipropileno)</option>
+                </select>
+              </div>
+            </div>
+            <button class="btn-calc" onclick="calcularTubulacaoAguaQuente()">Calcular Tubulação</button>
+          </form>
+          <div id="resultado-aq-tubulacao" class="resultado hidden"></div>
+        </div>
+
+      </div>
+    </section><!-- #panel-aguaquente -->
+
+    <!-- ======================== COMBATE A INCÊNDIO ======================== -->
+    <section class="panel" id="panel-incendio" role="tabpanel" aria-labelledby="tab-incendio">
+      <div class="panel-header">
+        <h2>Combate a Incêndio — NBR 13714</h2>
+        <p class="panel-desc">Reserva técnica de incêndio (RTI), bomba de incêndio e dimensionamento da tubulação — sistemas de hidrantes e mangotinhos.</p>
+      </div>
+      <div class="calc-grid">
+
+        <!-- 1. RTI -->
+        <div class="card">
+          <h3 class="card-title"><span class="nbr-badge">NBR 13714</span><span class="card-number">1</span> Reserva Técnica de Incêndio (RTI)</h3>
+          <form onsubmit="return false;">
+            <div class="form-group">
+              <label for="inc-tipo">Tipo de sistema (NBR 13714)</label>
+              <select id="inc-tipo" onchange="atualizarSistemaIncendio()">
+                <option value="tipo1">Tipo 1 — Mangotinho (≤ 700 m² ou H ≤ 6 m)</option>
+                <option value="tipo2" selected>Tipo 2 — Hidrante simples (700–2500 m² ou H 6–23 m)</option>
+                <option value="tipo3">Tipo 3 — Hidrante duplo (2500–6000 m² ou H 23–30 m)</option>
+                <option value="tipo4">Tipo 4 — Hidrante especial (H > 30 m)</option>
+              </select>
+              <small class="hint" id="inc-tipo-hint">2 pontos simultâneos | 300 L/min/ponto | t_min = 60 min | DN coluna ≥ 65 mm | mangueira DN 40</small>
+            </div>
+            <div class="form-row-3">
+              <div class="form-group">
+                <label for="inc-n-pontos">Nº total de pontos instalados</label>
+                <input type="number" id="inc-n-pontos" min="1" value="4" placeholder="ex: 4" />
+              </div>
+              <div class="form-group">
+                <label for="inc-tempo">Tempo de funcionamento (min)</label>
+                <input type="number" id="inc-tempo" min="30" value="60" placeholder="ex: 60" />
+                <small class="hint">Mín. 30–60 min conforme tipo</small>
+              </div>
+            </div>
+            <button class="btn-calc" onclick="calcularRTI()">Calcular RTI</button>
+          </form>
+          <div id="resultado-rti" class="resultado hidden"></div>
+        </div>
+
+        <!-- 2. Bomba de Incêndio -->
+        <div class="card">
+          <h3 class="card-title"><span class="nbr-badge">NBR 13714</span><span class="card-number">2</span> Bomba de Incêndio</h3>
+          <form onsubmit="return false;">
+            <div class="form-group">
+              <label for="bi-tipo">Tipo de sistema</label>
+              <select id="bi-tipo">
+                <option value="tipo1">Tipo 1 — Mangotinho</option>
+                <option value="tipo2" selected>Tipo 2 — Hidrante simples</option>
+                <option value="tipo3">Tipo 3 — Hidrante duplo</option>
+                <option value="tipo4">Tipo 4 — Especial</option>
+              </select>
+            </div>
+            <div class="form-row-3">
+              <div class="form-group">
+                <label for="bi-hg">Altura geométrica Hg (m)</label>
+                <input type="number" id="bi-hg" step="0.5" min="1" value="15" placeholder="ex: 15" />
+                <small class="hint">RTI → hidrante mais alto</small>
+              </div>
+              <div class="form-group">
+                <label for="bi-hf">Perda de carga hf (m.c.a)</label>
+                <input type="number" id="bi-hf" step="0.5" min="0" value="5" placeholder="ex: 5" />
+              </div>
+            </div>
+            <button class="btn-calc" onclick="calcularBombaIncendio()">Calcular Bomba</button>
+          </form>
+          <div id="resultado-bomba-incendio" class="resultado hidden"></div>
+        </div>
+
+        <!-- 3. Tubulação de Incêndio -->
+        <div class="card">
+          <h3 class="card-title"><span class="card-number">3</span> Perda de Carga — Tubulação de Incêndio</h3>
+          <form onsubmit="return false;">
+            <div class="form-row-3">
+              <div class="form-group">
+                <label for="ti-vazao">Vazão Q (L/s)</label>
+                <input type="number" id="ti-vazao" step="0.01" min="0.01" value="5" placeholder="ex: 5" />
+              </div>
+              <div class="form-group">
+                <label for="ti-dn">Diâmetro interno DN (mm)</label>
+                <input type="number" id="ti-dn" step="1" min="25" value="65" placeholder="ex: 65" />
+              </div>
+              <div class="form-group">
+                <label for="ti-L">Comprimento L (m)</label>
+                <input type="number" id="ti-L" step="1" min="1" value="30" placeholder="ex: 30" />
+              </div>
+            </div>
+            <button class="btn-calc" onclick="calcularTubulacaoIncendio()">Calcular hf</button>
+          </form>
+          <div id="resultado-tubulacao-incendio" class="resultado hidden"></div>
+        </div>
+
+      </div>
+    </section><!-- #panel-incendio -->
+
     <!-- ======================== ESGOTO ======================== -->
     <section class="panel" id="panel-esgoto" role="tabpanel" aria-labelledby="tab-esgoto">
       <div class="panel-header">
@@ -687,6 +952,99 @@
           </form>
           <div id="resultado-declividade" class="resultado hidden"></div>
         </div>
+
+        <!-- Tensão Trativa -->
+        <div class="card">
+          <h3 class="card-title">
+            <span class="card-number">4</span>
+            Tensão Trativa — NBR 9649:2024
+          </h3>
+          <form id="form-tensao-trativa" onsubmit="return false;">
+            <div class="form-group">
+              <label for="tt-q">Vazão de projeto Q (L/s)</label>
+              <input type="number" id="tt-q" step="0.001" min="0.001" value="2.0" placeholder="ex: 2.0" />
+            </div>
+            <div class="form-group">
+              <label for="tt-dn">Diâmetro nominal DN (mm)</label>
+              <input type="number" id="tt-dn" min="100" value="150" placeholder="ex: 150" />
+            </div>
+            <div class="form-group">
+              <label for="tt-i">Declividade I (m/m)</label>
+              <input type="number" id="tt-i" step="0.0001" min="0.0001" value="0.005" placeholder="ex: 0.005" />
+              <small class="hint">Ex: 0,005 = 5 ‰</small>
+            </div>
+            <div class="form-group">
+              <label for="tt-n">Coeficiente n de Manning</label>
+              <select id="tt-n">
+                <option value="0.009">0,009 — PVC liso</option>
+                <option value="0.010" selected>0,010 — PVC corrugado</option>
+                <option value="0.013">0,013 — Concreto</option>
+                <option value="0.015">0,015 — Manilha cerâmica</option>
+              </select>
+            </div>
+            <button class="btn-calc" onclick="calcularTensaoTraiva()">Calcular Tensão Trativa</button>
+          </form>
+          <div id="resultado-tensao-trativa" class="resultado hidden"></div>
+        </div>
+
+        <!-- Infiltração e Contribuição -->
+        <div class="card">
+          <h3 class="card-title">
+            <span class="card-number">5</span>
+            Infiltração e Contribuição
+          </h3>
+          <form id="form-infiltracao" onsubmit="return false;">
+            <div class="form-group">
+              <label for="inf-taxa">Taxa de infiltração (L/s·km)</label>
+              <input type="number" id="inf-taxa" step="0.1" min="0" value="0.5" placeholder="ex: 0.5" />
+              <small class="hint">NBR 9649: 0,5 a 1,0 L/s·km para solo seco; até 3,0 para solo saturado</small>
+            </div>
+            <div class="form-group">
+              <label for="inf-l">Extensão da rede (km)</label>
+              <input type="number" id="inf-l" step="0.01" min="0" value="1.0" placeholder="ex: 1.0" />
+            </div>
+            <div class="form-group">
+              <label for="inf-qcontr">Contribuição singular Q_pontal (L/s)</label>
+              <input type="number" id="inf-qcontr" step="0.01" min="0" value="0" placeholder="ex: 0" />
+              <small class="hint">Lançamentos pontuais de efluentes tratados</small>
+            </div>
+            <button class="btn-calc" onclick="calcularInfiltracao()">Calcular Infiltração</button>
+          </form>
+          <div id="resultado-infiltracao" class="resultado hidden"></div>
+        </div>
+
+        <!-- Poços de Visita -->
+        <div class="card">
+          <h3 class="card-title">
+            <span class="card-number">6</span>
+            Poços de Visita e Recobrimento
+          </h3>
+          <form id="form-poco-visita" onsubmit="return false;">
+            <div class="form-group">
+              <label for="pv-dn">Diâmetro nominal da tubulação DN (mm)</label>
+              <input type="number" id="pv-dn" min="100" value="150" placeholder="ex: 150" />
+            </div>
+            <div class="form-group">
+              <label for="pv-extensao">Extensão do trecho (m)</label>
+              <input type="number" id="pv-extensao" step="1" min="1" value="80" placeholder="ex: 80" />
+            </div>
+            <div class="form-group">
+              <label for="pv-local">Local de instalação</label>
+              <select id="pv-local">
+                <option value="via">Via pública</option>
+                <option value="passeio">Passeio / calçada</option>
+                <option value="quintal">Quintal / área verde</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="pv-h">Profundidade da geratriz superior do tubo (m)</label>
+              <input type="number" id="pv-h" step="0.01" min="0" value="1.2" placeholder="ex: 1.2" />
+            </div>
+            <button class="btn-calc" onclick="calcularPocoVisita()">Verificar PV e Recobrimento</button>
+          </form>
+          <div id="resultado-poco-visita" class="resultado hidden"></div>
+        </div>
+
       </div>
     </section>
 
@@ -814,6 +1172,140 @@
           </form>
           <div id="resultado-tubo-pluvial" class="resultado hidden"></div>
         </div>
+
+        <!-- Tempo de Concentração -->
+        <div class="card">
+          <h3 class="card-title">
+            <span class="card-number">4</span>
+            Tempo de Concentração — Kirpich / Temez
+          </h3>
+          <form id="form-tc" onsubmit="return false;">
+            <div class="form-group">
+              <label for="tc-l">Comprimento do talvegue L (m)</label>
+              <input type="number" id="tc-l" step="1" min="1" value="100" placeholder="ex: 100" />
+            </div>
+            <div class="form-group">
+              <label for="tc-h">Desnível total H (m)</label>
+              <input type="number" id="tc-h" step="0.1" min="0.1" value="5" placeholder="ex: 5" />
+            </div>
+            <div class="form-group">
+              <label for="tc-formula">Fórmula</label>
+              <select id="tc-formula">
+                <option value="kirpich">Kirpich — bacias rurais e urbanas</option>
+                <option value="temez">Témez — bacias hidrográficas ≥ 1 ha</option>
+              </select>
+            </div>
+            <button class="btn-calc" onclick="calcularTempoConcent()">Calcular tc</button>
+          </form>
+          <div id="resultado-tc" class="resultado hidden"></div>
+        </div>
+
+        <!-- Área de Contribuição NBR 10844 -->
+        <div class="card card-full">
+          <h3 class="card-title">
+            <span class="card-number">5</span>
+            Área de Contribuição — NBR 10844
+          </h3>
+          <p class="hint" style="margin-bottom:12px">A efetiva = (a + h/2) × b — onde h = altura de obstáculo ao vento (beiral, parede adjacente). Para superfícies planas, h = 0.</p>
+          <div class="predial-add-row">
+            <div class="form-group" style="flex:1">
+              <label for="ac-a">a — largura (m)</label>
+              <input type="number" id="ac-a" step="0.1" min="0" value="5" placeholder="m" />
+            </div>
+            <div class="form-group" style="flex:1">
+              <label for="ac-h">h — obstáculo (m)</label>
+              <input type="number" id="ac-h" step="0.1" min="0" value="0" placeholder="m" />
+            </div>
+            <div class="form-group" style="flex:1">
+              <label for="ac-b">b — comprimento (m)</label>
+              <input type="number" id="ac-b" step="0.1" min="0" value="10" placeholder="m" />
+            </div>
+            <div class="form-group" style="flex:1">
+              <label for="ac-c">C escoamento</label>
+              <input type="number" id="ac-c" step="0.01" min="0.1" max="1" value="0.95" placeholder="0.95" />
+            </div>
+            <div class="form-group" style="flex:0 0 auto;align-self:flex-end">
+              <button class="btn-calc" style="margin:0" onclick="adicionarSuperficieDrenagem()">+ Adicionar</button>
+            </div>
+          </div>
+          <div class="predial-table-wrap">
+            <table class="predial-table">
+              <thead>
+                <tr><th>a (m)</th><th>b (m)</th><th>h (m)</th><th>C</th><th>A efet. (m²)</th><th></th></tr>
+              </thead>
+              <tbody id="ac-tbody">
+                <tr><td colspan="6" class="predial-empty">Nenhuma superfície adicionada.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="form-group" style="margin-top:12px;max-width:300px">
+            <label for="ac-i">Intensidade de chuva i (mm/h)</label>
+            <input type="number" id="ac-i" step="1" min="1" value="100" placeholder="ex: 100" />
+            <small class="hint">Obtido na curva IDF — use o Card 2 acima</small>
+          </div>
+          <button class="btn-calc" onclick="calcularAreaContribuicao()">Calcular Área e Vazão</button>
+          <div id="resultado-ac" class="resultado hidden"></div>
+        </div>
+
+        <!-- Calhas -->
+        <div class="card">
+          <h3 class="card-title">
+            <span class="card-number">6</span>
+            Dimensionamento de Calhas — NBR 10844
+          </h3>
+          <form id="form-calha" onsubmit="return false;">
+            <div class="form-group">
+              <label for="cal-q">Vazão de projeto Q (L/min)</label>
+              <input type="number" id="cal-q" step="1" min="1" value="150" placeholder="ex: 150" />
+            </div>
+            <div class="form-group">
+              <label for="cal-sec">Seção da calha</label>
+              <select id="cal-sec">
+                <option value="semi">Semicircular</option>
+                <option value="rect">Retangular (H = B/2)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="cal-i">Declividade I (%)</label>
+              <input type="number" id="cal-i" step="0.1" min="0.1" value="0.5" placeholder="ex: 0.5" />
+              <small class="hint">NBR 10844: mín. 0,5% para calhas</small>
+            </div>
+            <button class="btn-calc" onclick="calcularCalha()">Dimensionar Calha</button>
+          </form>
+          <div id="resultado-calha" class="resultado hidden"></div>
+        </div>
+
+        <!-- Condutores -->
+        <div class="card">
+          <h3 class="card-title">
+            <span class="card-number">7</span>
+            Condutores Verticais e Horizontais — NBR 10844
+          </h3>
+          <form id="form-condutores" onsubmit="return false;">
+            <div class="form-group">
+              <label for="cv-tipo">Tipo de condutor</label>
+              <select id="cv-tipo" onchange="document.getElementById('cond-decliv-grupo').style.display=this.value==='horizontal'?'block':'none'">
+                <option value="vertical">Vertical</option>
+                <option value="horizontal">Horizontal</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="cv-q">Vazão de projeto Q (L/min)</label>
+              <input type="number" id="cv-q" step="1" min="1" value="150" placeholder="ex: 150" />
+            </div>
+            <div class="form-group" id="cond-decliv-grupo" style="display:none">
+              <label for="cv-decl">Declividade (%)</label>
+              <select id="cv-decl">
+                <option value="0.5">0,5%</option>
+                <option value="1.0" selected>1,0%</option>
+                <option value="2.0">2,0%</option>
+              </select>
+            </div>
+            <button class="btn-calc" onclick="calcularCondutores()">Dimensionar Condutor</button>
+          </form>
+          <div id="resultado-condutores" class="resultado hidden"></div>
+        </div>
+
       </div>
     </section>
 
@@ -1268,6 +1760,8 @@
 
   <script src="js/tabelas.js"></script>
   <script src="js/calculos-agua.js"></script>
+  <script src="js/calculos-aguaquente.js"></script>
+  <script src="js/calculos-incendio.js"></script>
   <script src="js/calculos-esgoto.js"></script>
   <script src="js/calculos-drenagem.js"></script>
   <script src="js/projeto.js"></script>
