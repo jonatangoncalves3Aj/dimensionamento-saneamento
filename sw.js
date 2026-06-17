@@ -1,5 +1,5 @@
 // Service Worker — Dimensionamento de Saneamento
-const CACHE = 'saneamento-v4';
+const CACHE = 'saneamento-v5';
 const ASSETS = [
   './',
   './index.html',
@@ -9,6 +9,8 @@ const ASSETS = [
   './js/projeto.js',
   './js/tabelas.js',
   './js/calculos-agua.js',
+  './js/calculos-aguaquente.js',
+  './js/calculos-incendio.js',
   './js/calculos-esgoto.js',
   './js/calculos-drenagem.js',
   './js/calculos-fossa.js',

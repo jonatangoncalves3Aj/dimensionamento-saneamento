@@ -204,8 +204,6 @@ function calcularDeclividade() {
 
 /* ============================================================
    Funções auxiliares — relações hidráulicas para seção circular
-   (baseadas nas tabelas de Chaudhry / Azevedo Netto)
-   ============================================================ */
 
 /**
  * Relação Q_parcial / Q_plena em função de y/D para seção circular.
@@ -242,4 +240,164 @@ function relacaoVManning(yl) {
   // V_parc/V_plena = (R_parc/R_plena)^(2/3)
   const R_rel = 1 - Math.sin(theta) / theta;
   return Math.pow(R_rel, 2/3);
+}
+
+/* ============================================================
+   4. TENSÃO TRATIVA — NBR 9649:2024
+   ============================================================ */
+function calcularTensaoTraiva() {
+  const DN    = parseFloat(document.getElementById('tt-dn').value);
+  const n_man = parseFloat(document.getElementById('tt-n').value);
+  const Q     = parseFloat(document.getElementById('tt-q').value);
+  const I     = parseFloat(document.getElementById('tt-i').value);
+  const el    = document.getElementById('resultado-tensao-trativa');
+
+  if (!DN || !n_man || !Q || !I || DN <= 0 || I <= 0 || Q <= 0) {
+    mostrarErro(el, 'Preencha DN, n, Q e declividade com valores positivos.');
+    return;
+  }
+
+  const D   = DN / 1000;         // m
+  const Qm3 = Q / 1000;          // m³/s
+
+  // Determinar lâmina normal y/D por iteração (bisseção)
+  // Q = relacaoQ(yl) × Q_plena
+  const Q_plena = (1 / n_man) * (Math.PI * D * D / 4) * Math.pow(D / 4, 2/3) * Math.pow(I, 0.5);
+
+  let yl_norm = 0;
+  if (Qm3 >= Q_plena) {
+    yl_norm = 1.0;
+  } else {
+    // Bisseção para encontrar yl tal que relacaoQManning(yl) = Qm3/Q_plena
+    const ratio_target = Qm3 / Q_plena;
+    let lo = 0, hi = 1;
+    for (let iter = 0; iter < 60; iter++) {
+      const mid = (lo + hi) / 2;
+      if (relacaoQManning(mid) < ratio_target) lo = mid; else hi = mid;
+    }
+    yl_norm = (lo + hi) / 2;
+  }
+
+  // Raio hidráulico parcial
+  const theta   = 2 * Math.acos(1 - 2 * yl_norm);
+  const R_parc  = (D / 4) * (1 - Math.sin(theta) / theta);   // m
+
+  // Tensão trativa: τ = γ_água × R_h × I   [Pa]  (γ = 9810 N/m³)
+  const tau = 9810 * R_parc * I;   // Pa
+
+  const tau_min = 1.0;   // Pa — NBR 9649:2024
+  const status  = tau >= tau_min ? 'ok' : 'aviso';
+
+  // Velocidade parcial
+  const V_plena = (1 / n_man) * Math.pow(D / 4, 2/3) * Math.pow(I, 0.5);
+  const V_parc  = V_plena * relacaoVManning(yl_norm);
+
+  el.className = `resultado resultado-${status}`;
+  el.innerHTML = `
+    <h4>Resultados — Tensão Trativa (NBR 9649)</h4>
+    <div class="result-main">
+      <div><div class="label">Tensão trativa τ</div><div class="value">${fmt(tau, 3)} Pa</div></div>
+      <span class="result-badge ${status}">${status === 'ok' ? '&#10003; Autolimpeza OK' : '&#9888; Abaixo do mínimo'}</span>
+    </div>
+    <table class="result-table">
+      <tr><td>Diâmetro nominal DN</td><td>${DN} mm</td></tr>
+      <tr><td>Coef. n (Manning)</td><td>${n_man}</td></tr>
+      <tr><td>Declividade I</td><td>${fmt(I * 1000, 3)} ‰ (${I} m/m)</td></tr>
+      <tr><td>Vazão de projeto Q</td><td>${fmt(Q, 4)} L/s</td></tr>
+      <tr><td>Vazão a seção plena Q_plena</td><td>${fmt(Q_plena * 1000, 4)} L/s</td></tr>
+      <tr><td>Lâmina normal y/D</td><td>${fmt(yl_norm * 100, 1)}% de D = ${fmt(yl_norm * DN, 2)} mm</td></tr>
+      <tr><td>Raio hidráulico parcial R_h</td><td>${fmt(R_parc * 1000, 3)} mm = ${fmt(R_parc, 5)} m</td></tr>
+      <tr><td>Fórmula: τ = γ × R_h × I</td><td>${fmt(9810)} × ${fmt(R_parc, 5)} × ${I} = <strong>${fmt(tau, 3)} Pa</strong></td></tr>
+      <tr><td>Tensão trativa mínima (NBR 9649)</td><td>1,0 Pa</td></tr>
+      <tr><td>Velocidade na lâmina normal</td><td>${fmt(V_parc, 3)} m/s</td></tr>
+    </table>
+    <p class="status-msg">${tau >= tau_min
+      ? `&#10003; Tensão trativa (${fmt(tau, 3)} Pa) ≥ 1,0 Pa — critério de autolimpeza atendido (NBR 9649).`
+      : `&#9888; Tensão trativa (${fmt(tau, 3)} Pa) < 1,0 Pa — risco de deposição de sedimentos. Aumente a declividade ou reduza o DN.`}</p>`;
+}
+
+/* ============================================================
+   5. INFILTRAÇÃO NA REDE
+   ============================================================ */
+function calcularInfiltracao() {
+  const taxa  = parseFloat(document.getElementById('inf-taxa').value);   // L/s por km de rede
+  const L     = parseFloat(document.getElementById('inf-l').value);      // km
+  const QContr= parseFloat(document.getElementById('inf-qcontr').value) || 0;  // L/s (singular)
+  const el    = document.getElementById('resultado-infiltracao');
+
+  if (!taxa || !L || taxa <= 0 || L <= 0) {
+    mostrarErro(el, 'Informe a taxa de infiltração e o comprimento da rede.');
+    return;
+  }
+
+  const Q_inf  = taxa * L;         // L/s
+  const Q_tot  = Q_inf + QContr;   // L/s
+
+  el.className = 'resultado resultado-ok';
+  el.innerHTML = `
+    <h4>Resultados — Infiltração na Rede de Esgoto</h4>
+    <div class="result-main">
+      <div><div class="label">Q infiltração</div><div class="value">${fmt(Q_inf, 4)} L/s</div></div>
+      <div><div class="label">Q total</div><div class="value">${fmt(Q_tot, 4)} L/s</div></div>
+    </div>
+    <table class="result-table">
+      <tr><td>Taxa de infiltração</td><td>${fmt(taxa, 4)} L/s por km de rede</td></tr>
+      <tr><td>Extensão da rede</td><td>${fmt(L, 3)} km</td></tr>
+      <tr><td>Vazão de infiltração distribuída</td><td>${fmt(Q_inf, 5)} L/s</td></tr>
+      <tr><td>Contribuição singular (ligações, etc.)</td><td>${fmt(QContr, 5)} L/s</td></tr>
+      <tr><td><strong>Vazão de infiltração total</strong></td><td><strong>${fmt(Q_tot, 5)} L/s</strong></td></tr>
+    </table>
+    <p class="status-msg">&#9432; NBR 9649: taxa típica de infiltração = 0,05 a 0,5 L/s·km para redes novas; até 1,0 L/s·km para redes antigas. Soma-se à vazão máxima de projeto.</p>`;
+}
+
+/* ============================================================
+   6. POÇOS DE VISITA E RECOBRIMENTO
+   ============================================================ */
+function calcularPocoVisita() {
+  const DN       = parseFloat(document.getElementById('pv-dn').value);
+  const H_coletor= parseFloat(document.getElementById('pv-h').value);     // m profundidade da geratriz
+  const local    = document.getElementById('pv-local').value;             // 'via'|'passeio'|'quintal'
+  const el       = document.getElementById('resultado-poco-visita');
+
+  if (!DN || !H_coletor) {
+    mostrarErro(el, 'Informe o DN e a profundidade da geratriz do coletor.');
+    return;
+  }
+
+  // Espaçamento máximo entre PVs (NBR 9649 §7.2)
+  let espMax = 0;
+  if      (DN <= 150) espMax = 100;
+  else if (DN <= 250) espMax = 150;
+  else if (DN <= 400) espMax = 200;
+  else                espMax = 250;
+
+  // Recobrimento mínimo (NBR 9649 §5.6)
+  const recMin = { via: 0.90, passeio: 0.65, quintal: 0.60 };
+  const recLabel = { via: 'Via (leito carroçável)', passeio: 'Passeio / calçada', quintal: 'Quintal / jardim' };
+  const rc_min = recMin[local] || 0.90;
+
+  const H_geratriz = H_coletor + DN / 1000;   // profundidade geratriz inferior = geratriz sup + DN
+  const rec_atual  = H_coletor;               // recobrimento = profundidade da geratriz superior
+  const status     = rec_atual >= rc_min ? 'ok' : 'erro';
+
+  el.className = `resultado resultado-${status}`;
+  el.innerHTML = `
+    <h4>Resultados — Poços de Visita (NBR 9649)</h4>
+    <div class="result-main">
+      <div><div class="label">Espaçamento máximo entre PVs</div><div class="value">${espMax} m</div></div>
+      <span class="result-badge ${status}">${status === 'ok' ? '&#10003; Recobrimento OK' : '&#9888; Recobrimento insuficiente'}</span>
+    </div>
+    <table class="result-table">
+      <tr><td>Diâmetro nominal DN</td><td>${DN} mm</td></tr>
+      <tr><td>Profundidade da geratriz superior</td><td>${fmt(H_coletor, 2)} m</td></tr>
+      <tr><td>Profundidade da geratriz inferior</td><td>${fmt(H_geratriz, 2)} m</td></tr>
+      <tr><td>Local de instalação</td><td>${recLabel[local]}</td></tr>
+      <tr><td>Recobrimento mínimo (NBR 9649)</td><td>${fmt(rc_min, 2)} m</td></tr>
+      <tr><td>Recobrimento atual</td><td>${fmt(rec_atual, 2)} m</td></tr>
+      <tr><td>Espaçamento máximo entre PVs</td><td>${espMax} m</td></tr>
+    </table>
+    <p class="status-msg">${status === 'ok'
+      ? `&#10003; Recobrimento de ${fmt(rec_atual, 2)} m ≥ mínimo de ${rc_min} m para ${recLabel[local]}.`
+      : `&#9888; Recobrimento insuficiente (${fmt(rec_atual, 2)} m < ${rc_min} m). Aprofundar o coletor ou usar tubo com revestimento especial.`}</p>
+    <p class="status-msg">&#9432; PVs devem ser instalados em: mudança de direção, mudança de DN, junção de coletores, início de coletor, e a cada ${espMax} m em alinhamento reto (DN ${DN} mm).</p>`;
 }

@@ -18,6 +18,7 @@ function gerarMemorial() {
 
   // ── Coletar resultados de cada módulo ──
   const modulos = [
+    // Água Fria
     { id: 'resultado-demanda-agua',           titulo: 'Água Fria — Demanda (NBR 5626)'              },
     { id: 'resultado-reservatorio-inferior',  titulo: 'Água Fria — Reservatório Inferior (Cisterna)'},
     { id: 'resultado-reservatorio-superior',  titulo: 'Água Fria — Reservatório Superior (RS)'      },
@@ -25,12 +26,34 @@ function gerarMemorial() {
     { id: 'resultado-diametro-agua',          titulo: 'Água Fria — Diâmetro de Tubulação'           },
     { id: 'resultado-hazen',                  titulo: 'Água Fria — Perda de Carga (Hazen-Williams)' },
     { id: 'resultado-pressao-critica',        titulo: 'Água Fria — Pressão no Ponto Crítico'        },
-    { id: 'resultado-esgoto',          titulo: 'Esgotamento Sanitário (NBR 9649)'            },
-    { id: 'resultado-drenagem',        titulo: 'Drenagem Pluvial (NBR 10844)'                },
-    { id: 'resultado-predial',         titulo: 'Esgoto Predial — UHC (NBR 8160)'            },
-    { id: 'resultado-fossa',           titulo: 'Fossa Séptica (NBR 7229)'                   },
-    { id: 'resultado-filtro',          titulo: 'Filtro Anaeróbio (NBR 7229)'                },
-    { id: 'resultado-sumidouro',       titulo: 'Sumidouro (NBR 13969)'                      },
+    // Água Quente
+    { id: 'resultado-demanda-aq',             titulo: 'Água Quente — Consumo Diário (NBR 7198)'     },
+    { id: 'resultado-aquecedor',              titulo: 'Água Quente — Aquecedor / Boiler'            },
+    { id: 'resultado-tubulacao-aq',           titulo: 'Água Quente — Tubulação e Dilatação'         },
+    // Combate a Incêndio
+    { id: 'resultado-rti',                    titulo: 'Incêndio — Reserva Técnica (NBR 13714)'      },
+    { id: 'resultado-bomba-incendio',         titulo: 'Incêndio — Bomba de Incêndio'               },
+    { id: 'resultado-tubulacao-incendio',     titulo: 'Incêndio — Tubulação e Mangueiras'          },
+    // Esgoto Público
+    { id: 'resultado-vazao-esgoto',           titulo: 'Esgoto Público — Vazão (NBR 9649)'           },
+    { id: 'resultado-manning',                titulo: 'Esgoto Público — Diâmetro por Manning'       },
+    { id: 'resultado-declividade',            titulo: 'Esgoto Público — Declividade e Velocidades'  },
+    { id: 'resultado-tensao-trativa',         titulo: 'Esgoto Público — Tensão Trativa'             },
+    { id: 'resultado-infiltracao',            titulo: 'Esgoto Público — Infiltração e Contribuição' },
+    { id: 'resultado-poco-visita',            titulo: 'Esgoto Público — Poços de Visita'            },
+    // Drenagem Pluvial
+    { id: 'resultado-racional',               titulo: 'Drenagem — Método Racional (NBR 10844)'      },
+    { id: 'resultado-idf',                    titulo: 'Drenagem — Intensidade IDF'                  },
+    { id: 'resultado-tubo-pluvial',           titulo: 'Drenagem — Tubulação Pluvial'                },
+    { id: 'resultado-tc',                     titulo: 'Drenagem — Tempo de Concentração'            },
+    { id: 'resultado-ac',                     titulo: 'Drenagem — Área de Contribuição'             },
+    { id: 'resultado-calha',                  titulo: 'Drenagem — Calhas'                           },
+    { id: 'resultado-condutores',             titulo: 'Drenagem — Condutores Verticais/Horizontais' },
+    // Esgoto Predial e Fossa
+    { id: 'resultado-predial',                titulo: 'Esgoto Predial — UHC (NBR 8160)'             },
+    { id: 'resultado-fossa',                  titulo: 'Fossa Séptica (NBR 7229)'                    },
+    { id: 'resultado-filtro',                 titulo: 'Filtro Anaeróbio (NBR 7229)'                 },
+    { id: 'resultado-sumidouro',              titulo: 'Sumidouro (NBR 13969)'                       },
   ];
 
   const secoes = modulos.map(m => {
@@ -86,7 +109,7 @@ function gerarMemorial() {
         </table>
 
         <p class="memorial-disclaimer">
-          Este memorial é gerado automaticamente pela ferramenta de dimensionamento sanitário com base nos dados inseridos e nas normas NBR 5626, NBR 8160, NBR 9649, NBR 10844, NBR 7229 e NBR 13969.
+          Este memorial é gerado automaticamente pela ferramenta de dimensionamento sanitário com base nos dados inseridos e nas normas NBR 5626, NBR 7198, NBR 13714, NBR 8160, NBR 9649, NBR 10844, NBR 7229 e NBR 13969.
           Os resultados têm caráter orientativo e devem ser verificados por profissional habilitado.
         </p>
       </div>
@@ -97,7 +120,7 @@ function gerarMemorial() {
 
       <div class="memorial-rodape">
         <p>Gerado em ${hoje} por <strong>Dimensionamento de Saneamento</strong> — Ferramenta de Apoio à Engenharia Sanitária</p>
-        <p>Normas de referência: ABNT NBR 5626, NBR 8160, NBR 9649, NBR 10844, NBR 7229:2022, NBR 13969:1997</p>
+        <p>Normas de referência: ABNT NBR 5626, NBR 7198, NBR 13714, NBR 8160, NBR 9649, NBR 10844, NBR 7229:2022, NBR 13969:1997</p>
       </div>
 
     </div>
