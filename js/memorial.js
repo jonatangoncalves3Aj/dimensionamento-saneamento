@@ -27,9 +27,9 @@ function gerarMemorial() {
     { id: 'resultado-hazen',                  titulo: 'Água Fria — Perda de Carga (Hazen-Williams)' },
     { id: 'resultado-pressao-critica',        titulo: 'Água Fria — Pressão no Ponto Crítico'        },
     // Água Quente
-    { id: 'resultado-demanda-aq',             titulo: 'Água Quente — Consumo Diário (NBR 7198)'     },
-    { id: 'resultado-aquecedor',              titulo: 'Água Quente — Aquecedor / Boiler'            },
-    { id: 'resultado-tubulacao-aq',           titulo: 'Água Quente — Tubulação e Dilatação'         },
+    { id: 'resultado-aq-demanda',             titulo: 'Água Quente — Consumo Diário (NBR 7198)'     },
+    { id: 'resultado-aq-aquecedor',           titulo: 'Água Quente — Aquecedor / Boiler'            },
+    { id: 'resultado-aq-tubulacao',           titulo: 'Água Quente — Tubulação e Dilatação'         },
     // Combate a Incêndio
     { id: 'resultado-rti',                    titulo: 'Incêndio — Reserva Técnica (NBR 13714)'      },
     { id: 'resultado-bomba-incendio',         titulo: 'Incêndio — Bomba de Incêndio'               },

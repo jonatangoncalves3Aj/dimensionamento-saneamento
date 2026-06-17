@@ -345,7 +345,7 @@ function calcularAreaContribuicao() {
 function calcularCalha() {
   const Q   = parseFloat(document.getElementById('cal-q').value);       // L/min
   const sec = document.getElementById('cal-sec').value;                 // 'semi'|'rect'
-  const I   = parseFloat(document.getElementById('cal-i').value) / 1000; // converte % para m/m
+  const I   = parseFloat(document.getElementById('cal-i').value) / 100; // converte % para m/m
   const n   = 0.011;  // n Manning para calhas de zinco/alumínio/PVC pintado
   const el  = document.getElementById('resultado-calha');
 

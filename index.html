@@ -961,16 +961,16 @@
           </h3>
           <form id="form-tensao-trativa" onsubmit="return false;">
             <div class="form-group">
-              <label for="tt-vazao">Vazão de projeto Q (L/s)</label>
-              <input type="number" id="tt-vazao" step="0.001" min="0.001" value="2.0" placeholder="ex: 2.0" />
+              <label for="tt-q">Vazão de projeto Q (L/s)</label>
+              <input type="number" id="tt-q" step="0.001" min="0.001" value="2.0" placeholder="ex: 2.0" />
             </div>
             <div class="form-group">
               <label for="tt-dn">Diâmetro nominal DN (mm)</label>
               <input type="number" id="tt-dn" min="100" value="150" placeholder="ex: 150" />
             </div>
             <div class="form-group">
-              <label for="tt-decliv">Declividade I (m/m)</label>
-              <input type="number" id="tt-decliv" step="0.0001" min="0.0001" value="0.005" placeholder="ex: 0.005" />
+              <label for="tt-i">Declividade I (m/m)</label>
+              <input type="number" id="tt-i" step="0.0001" min="0.0001" value="0.005" placeholder="ex: 0.005" />
               <small class="hint">Ex: 0,005 = 5 ‰</small>
             </div>
             <div class="form-group">
@@ -1000,8 +1000,8 @@
               <small class="hint">NBR 9649: 0,5 a 1,0 L/s·km para solo seco; até 3,0 para solo saturado</small>
             </div>
             <div class="form-group">
-              <label for="inf-extensao">Extensão da rede (km)</label>
-              <input type="number" id="inf-extensao" step="0.01" min="0" value="1.0" placeholder="ex: 1.0" />
+              <label for="inf-l">Extensão da rede (km)</label>
+              <input type="number" id="inf-l" step="0.01" min="0" value="1.0" placeholder="ex: 1.0" />
             </div>
             <div class="form-group">
               <label for="inf-qcontr">Contribuição singular Q_pontal (L/s)</label>
@@ -1037,8 +1037,8 @@
               </select>
             </div>
             <div class="form-group">
-              <label for="pv-geratriz">Profundidade da geratriz superior do tubo (m)</label>
-              <input type="number" id="pv-geratriz" step="0.01" min="0" value="1.2" placeholder="ex: 1.2" />
+              <label for="pv-h">Profundidade da geratriz superior do tubo (m)</label>
+              <input type="number" id="pv-h" step="0.01" min="0" value="1.2" placeholder="ex: 1.2" />
             </div>
             <button class="btn-calc" onclick="calcularPocoVisita()">Verificar PV e Recobrimento</button>
           </form>
@@ -1181,12 +1181,12 @@
           </h3>
           <form id="form-tc" onsubmit="return false;">
             <div class="form-group">
-              <label for="tc-comprimento">Comprimento do talvegue L (m)</label>
-              <input type="number" id="tc-comprimento" step="1" min="1" value="100" placeholder="ex: 100" />
+              <label for="tc-l">Comprimento do talvegue L (m)</label>
+              <input type="number" id="tc-l" step="1" min="1" value="100" placeholder="ex: 100" />
             </div>
             <div class="form-group">
-              <label for="tc-desnivel">Desnível total H (m)</label>
-              <input type="number" id="tc-desnivel" step="0.1" min="0.1" value="5" placeholder="ex: 5" />
+              <label for="tc-h">Desnível total H (m)</label>
+              <input type="number" id="tc-h" step="0.1" min="0.1" value="5" placeholder="ex: 5" />
             </div>
             <div class="form-group">
               <label for="tc-formula">Fórmula</label>
@@ -1206,17 +1206,8 @@
             <span class="card-number">5</span>
             Área de Contribuição — NBR 10844
           </h3>
-          <p class="hint" style="margin-bottom:12px">Superfícies inclinadas: A efetiva = (a + h/2) × b, onde h = altura do obstáculo ao vento (paredes adjacentes).</p>
+          <p class="hint" style="margin-bottom:12px">A efetiva = (a + h/2) × b — onde h = altura de obstáculo ao vento (beiral, parede adjacente). Para superfícies planas, h = 0.</p>
           <div class="predial-add-row">
-            <div class="form-group" style="flex:2">
-              <label for="ac-tipo">Tipo de superfície</label>
-              <select id="ac-tipo">
-                <option value="telhado">Telhado inclinado</option>
-                <option value="laje">Laje / terraço</option>
-                <option value="piso">Piso externo</option>
-                <option value="parede">Parede</option>
-              </select>
-            </div>
             <div class="form-group" style="flex:1">
               <label for="ac-a">a — largura (m)</label>
               <input type="number" id="ac-a" step="0.1" min="0" value="5" placeholder="m" />
@@ -1230,8 +1221,8 @@
               <input type="number" id="ac-b" step="0.1" min="0" value="10" placeholder="m" />
             </div>
             <div class="form-group" style="flex:1">
-              <label for="ac-coef">C escoamento</label>
-              <input type="number" id="ac-coef" step="0.01" min="0.1" max="1" value="0.95" placeholder="0.95" />
+              <label for="ac-c">C escoamento</label>
+              <input type="number" id="ac-c" step="0.01" min="0.1" max="1" value="0.95" placeholder="0.95" />
             </div>
             <div class="form-group" style="flex:0 0 auto;align-self:flex-end">
               <button class="btn-calc" style="margin:0" onclick="adicionarSuperficieDrenagem()">+ Adicionar</button>
@@ -1240,17 +1231,17 @@
           <div class="predial-table-wrap">
             <table class="predial-table">
               <thead>
-                <tr><th>Tipo</th><th>a (m)</th><th>h (m)</th><th>b (m)</th><th>A efet. (m²)</th><th>C</th><th>A×C (m²)</th><th></th></tr>
+                <tr><th>a (m)</th><th>b (m)</th><th>h (m)</th><th>C</th><th>A efet. (m²)</th><th></th></tr>
               </thead>
-              <tbody id="ac-superficies-tbody">
-                <tr><td colspan="8" class="predial-empty">Nenhuma superfície adicionada.</td></tr>
+              <tbody id="ac-tbody">
+                <tr><td colspan="6" class="predial-empty">Nenhuma superfície adicionada.</td></tr>
               </tbody>
             </table>
           </div>
           <div class="form-group" style="margin-top:12px;max-width:300px">
-            <label for="ac-intensidade">Intensidade de chuva i (mm/h)</label>
-            <input type="number" id="ac-intensidade" step="1" min="1" value="100" placeholder="ex: 100" />
-            <small class="hint">Obtido na curva IDF — use a aba IDF acima</small>
+            <label for="ac-i">Intensidade de chuva i (mm/h)</label>
+            <input type="number" id="ac-i" step="1" min="1" value="100" placeholder="ex: 100" />
+            <small class="hint">Obtido na curva IDF — use o Card 2 acima</small>
           </div>
           <button class="btn-calc" onclick="calcularAreaContribuicao()">Calcular Área e Vazão</button>
           <div id="resultado-ac" class="resultado hidden"></div>
@@ -1264,19 +1255,19 @@
           </h3>
           <form id="form-calha" onsubmit="return false;">
             <div class="form-group">
-              <label for="calha-vazao">Vazão de projeto Q (L/min)</label>
-              <input type="number" id="calha-vazao" step="1" min="1" value="150" placeholder="ex: 150" />
+              <label for="cal-q">Vazão de projeto Q (L/min)</label>
+              <input type="number" id="cal-q" step="1" min="1" value="150" placeholder="ex: 150" />
             </div>
             <div class="form-group">
-              <label for="calha-tipo">Seção da calha</label>
-              <select id="calha-tipo">
-                <option value="semicircular">Semicircular</option>
-                <option value="retangular">Retangular (H = B/2)</option>
+              <label for="cal-sec">Seção da calha</label>
+              <select id="cal-sec">
+                <option value="semi">Semicircular</option>
+                <option value="rect">Retangular (H = B/2)</option>
               </select>
             </div>
             <div class="form-group">
-              <label for="calha-decliv">Declividade I (m/m)</label>
-              <input type="number" id="calha-decliv" step="0.001" min="0.001" value="0.005" placeholder="ex: 0.005" />
+              <label for="cal-i">Declividade I (%)</label>
+              <input type="number" id="cal-i" step="0.1" min="0.1" value="0.5" placeholder="ex: 0.5" />
               <small class="hint">NBR 10844: mín. 0,5% para calhas</small>
             </div>
             <button class="btn-calc" onclick="calcularCalha()">Dimensionar Calha</button>
@@ -1292,19 +1283,19 @@
           </h3>
           <form id="form-condutores" onsubmit="return false;">
             <div class="form-group">
-              <label for="cond-tipo">Tipo de condutor</label>
-              <select id="cond-tipo" onchange="document.getElementById('cond-decliv-grupo').style.display=this.value==='horizontal'?'block':'none'">
+              <label for="cv-tipo">Tipo de condutor</label>
+              <select id="cv-tipo" onchange="document.getElementById('cond-decliv-grupo').style.display=this.value==='horizontal'?'block':'none'">
                 <option value="vertical">Vertical</option>
                 <option value="horizontal">Horizontal</option>
               </select>
             </div>
             <div class="form-group">
-              <label for="cond-vazao">Vazão de projeto Q (L/min)</label>
-              <input type="number" id="cond-vazao" step="1" min="1" value="150" placeholder="ex: 150" />
+              <label for="cv-q">Vazão de projeto Q (L/min)</label>
+              <input type="number" id="cv-q" step="1" min="1" value="150" placeholder="ex: 150" />
             </div>
             <div class="form-group" id="cond-decliv-grupo" style="display:none">
-              <label for="cond-decliv">Declividade (%)</label>
-              <select id="cond-decliv">
+              <label for="cv-decl">Declividade (%)</label>
+              <select id="cv-decl">
                 <option value="0.5">0,5%</option>
                 <option value="1.0" selected>1,0%</option>
                 <option value="2.0">2,0%</option>
