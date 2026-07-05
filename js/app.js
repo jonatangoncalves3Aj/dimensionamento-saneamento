@@ -60,8 +60,14 @@ function mostrarErro(el, msg) {
    Inicialização
    ============================================================ */
 document.addEventListener('DOMContentLoaded', function () {
-  // Iniciar na aba Dados do Projeto
-  switchTab('projeto');
+  // Abrir aba conforme o hash da URL (atalhos do PWA: #agua, #esgoto, #drenagem…)
+  // ou iniciar na aba Dados do Projeto
+  const hashTab = (location.hash || '').replace('#', '');
+  if (hashTab && document.getElementById('panel-' + hashTab)) {
+    switchTab(hashTab);
+  } else {
+    switchTab('projeto');
+  }
 
   // Inicializar coeficientes IDF com a cidade padrão
   if (typeof atualizarCoeficientesIDF === 'function') {
