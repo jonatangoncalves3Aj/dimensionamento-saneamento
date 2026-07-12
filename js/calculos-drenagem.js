@@ -155,6 +155,7 @@ function calcularTubulacaoPluvial() {
   const Q  = parseFloat(document.getElementById('tp-vazao').value);         // L/s
   const I  = parseFloat(document.getElementById('tp-declividade').value);   // m/m
   const n  = parseFloat(document.getElementById('tp-n').value);
+  const yl_max = parseFloat(document.getElementById('tp-lamina')?.value) || 0.6667; // y/D máx
 
   const el = document.getElementById('resultado-tubo-pluvial');
 
@@ -163,16 +164,17 @@ function calcularTubulacaoPluvial() {
     return;
   }
 
-  // Dimensionamento por Manning com seção plena (galerias pluviais projetadas para seção plena)
-  // Q = (1/n) × A × R^(2/3) × I^(1/2)
-  // Para seção circular: Q = (1/n) × (πD²/4) × (D/4)^(2/3) × I^(1/2)
-  //                     Q = (1/n) × (π/4) × D^(8/3) / 4^(2/3) × I^(1/2)
-  // D = [Q × n × 4^(2/3) / ((π/4) × I^(1/2))]^(3/8)
+  // Dimensionamento por Manning para lâmina máxima y/D (NBR 10844: condutores
+  // horizontais prediais com y/D ≤ 2/3; galerias urbanas usualmente y/D ≤ 0,85)
+  // Q_plena_necessária = Q / (Q_lam/Q_plena na lâmina máx)
+  // D = [Q_plena × n × 4^(2/3) / ((π/4) × I^(1/2))]^(3/8)
 
-  const Qm3s = Q / 1000;
+  const Qm3s    = Q / 1000;
+  const ratioQ  = relacaoQManning(yl_max);   // Q_lam/Q_plena na lâmina máxima
+  const Q_plena_nec = Qm3s / ratioQ;
 
   const D_calc = Math.pow(
-    (Qm3s * n * Math.pow(4, 2/3)) / ((Math.PI / 4) * Math.pow(I, 0.5)),
+    (Q_plena_nec * n * Math.pow(4, 2/3)) / ((Math.PI / 4) * Math.pow(I, 0.5)),
     3 / 8
   );  // m
   const D_mm = D_calc * 1000;
@@ -188,8 +190,9 @@ function calcularTubulacaoPluvial() {
   const Q_plena = (1/n) * A_plena * Math.pow(R_plena, 2/3) * Math.pow(I, 0.5);   // m³/s
   const V_plena = (1/n) * Math.pow(R_plena, 2/3) * Math.pow(I, 0.5);             // m/s
 
-  // Nível d'água relativo no DN adotado
-  const Q_rel = Qm3s / Q_plena;  // < 1 significa não está cheio
+  // Grau de enchimento real no DN adotado
+  const Q_rel = Qm3s / Q_plena;
+  const V_lam = V_plena * relacaoVManning(Math.min(yl_max, 1));
 
   // Critérios: V mín = 0,7 m/s (pluvial, NBR 10844); V máx = 5,0 m/s
   let status = 'ok', msgs = [];
@@ -208,53 +211,60 @@ function calcularTubulacaoPluvial() {
       <tr><td>Vazão de projeto Q</td><td>${fmt(Q)} L/s</td></tr>
       <tr><td>Declividade I</td><td>${I} m/m (${(I*1000).toFixed(2)} ‰)</td></tr>
       <tr><td>Coeficiente n (Manning)</td><td>${n}</td></tr>
-      <tr><td>Diâmetro calculado (seção plena)</td><td>${D_mm.toFixed(2)} mm</td></tr>
+      <tr><td>Lâmina máxima de projeto (y/D)</td><td>${(yl_max*100).toFixed(0)}% — Q/Q_plena = ${ratioQ.toFixed(3)}</td></tr>
+      <tr><td>Diâmetro calculado (p/ lâmina máx.)</td><td>${D_mm.toFixed(2)} mm</td></tr>
       <tr><td>DN comercial adotado</td><td><strong>DN ${DN} mm</strong></td></tr>
       <tr><td>Capacidade seção plena (Q_cap)</td><td>${fmt(Q_plena * 1000)} L/s</td></tr>
-      <tr><td>Grau de enchimento Q/Q_cap</td><td>${(Q_rel * 100).toFixed(1)}%</td></tr>
+      <tr><td>Grau de enchimento real Q/Q_cap</td><td>${(Q_rel * 100).toFixed(1)}%</td></tr>
       <tr><td>Velocidade (seção plena)</td><td>${V_plena.toFixed(3)} m/s</td></tr>
+      <tr><td>Velocidade na lâmina máxima</td><td>${V_lam.toFixed(3)} m/s</td></tr>
     </table>
     <p class="status-msg">${msgs.join('<br>')}</p>
-    <p class="status-msg">&#9432; Galerias pluviais são projetadas para escoamento a seção plena (NBR 10844).</p>`;
+    <p class="status-msg">&#9432; NBR 10844: condutores horizontais prediais dimensionados para lâmina y/D ≤ 2/3. Galerias urbanas: usual y/D ≤ 0,85.</p>`;
 }
 
 /* ============================================================
    4. TEMPO DE CONCENTRAÇÃO — KIRPICH
    ============================================================ */
 function calcularTempoConcent() {
-  const L  = parseFloat(document.getElementById('tc-l').value);   // m
-  const H  = parseFloat(document.getElementById('tc-h').value);   // m (desnível)
-  const el = document.getElementById('resultado-tc');
+  const L   = parseFloat(document.getElementById('tc-l').value);   // m
+  const H   = parseFloat(document.getElementById('tc-h').value);   // m (desnível)
+  const formula = document.getElementById('tc-formula')?.value || 'kirpich';
+  const el  = document.getElementById('resultado-tc');
 
   if (!L || !H || L <= 0 || H <= 0) {
     mostrarErro(el, 'Informe o comprimento e desnível do talvegue com valores positivos.');
     return;
   }
 
-  // Kirpich (1940): tc = 57 × (L³/H)^0,385    [min]  — bacia rural
-  const tc_kirpich = 57 * Math.pow((L * L * L) / H, 0.385) / 60;  // min  (L em m, H em m)
+  // Kirpich (1940): tc = 0,0195 × (L³/H)^0,385  [min]  (L e H em metros)
+  // (forma equivalente: tc = 57 × (L_km³/H)^0,385 com L em km)
+  const tc_kirpich = 0.0195 * Math.pow((L * L * L) / H, 0.385);  // min
 
-  // Temez (1978) — versão espanhola, usada no Brasil para bacias urbanas:
-  // tc = 0,3 × (L / I^0,25)^0,76   (L em km, I = H/L)
+  // Témez (1978) — usada no Brasil para bacias urbanas:
+  // tc = 0,3 × (L / I^0,25)^0,76 [h]  (L em km, I = H/L)
   const Lkm = L / 1000;
   const I_bacia = H / L;
   const tc_temez = 0.3 * Math.pow(Lkm / Math.pow(I_bacia, 0.25), 0.76) * 60;  // min
 
-  const tc_adot = Math.max(tc_kirpich, 5);  // mín 5 min (NBR 10844)
+  const tc_sel  = formula === 'temez' ? tc_temez : tc_kirpich;
+  const tc_adot = Math.max(tc_sel, 5);  // mín 5 min (NBR 10844)
+  const nomeFormula = formula === 'temez' ? 'Témez' : 'Kirpich';
 
   el.className = 'resultado resultado-ok';
   el.innerHTML = `
     <h4>Resultados — Tempo de Concentração</h4>
     <div class="result-main">
-      <div><div class="label">Tc (Kirpich)</div><div class="value">${fmt(tc_kirpich, 2)} min</div></div>
+      <div><div class="label">Tc (${nomeFormula})</div><div class="value">${fmt(tc_sel, 2)} min</div></div>
       <div><div class="label">Tc adotado</div><div class="value">${fmt(tc_adot, 2)} min</div></div>
     </div>
     <table class="result-table">
       <tr><td>Comprimento do talvegue principal (L)</td><td>${fmt(L, 1)} m = ${fmt(Lkm, 3)} km</td></tr>
       <tr><td>Desnível total da bacia (H)</td><td>${fmt(H, 2)} m</td></tr>
       <tr><td>Declividade média (I = H/L)</td><td>${fmt(I_bacia * 100, 3)}%</td></tr>
-      <tr><td>Tc — Kirpich (bacia rural/mista)</td><td>${fmt(tc_kirpich, 2)} min</td></tr>
-      <tr><td>Tc — Temez (bacia urbana)</td><td>${fmt(tc_temez, 2)} min</td></tr>
+      <tr><td>Tc — Kirpich: 0,0195 × (L³/H)<sup>0,385</sup></td><td>${fmt(tc_kirpich, 2)} min</td></tr>
+      <tr><td>Tc — Témez (bacia urbana)</td><td>${fmt(tc_temez, 2)} min</td></tr>
+      <tr><td>Fórmula selecionada</td><td>${nomeFormula}</td></tr>
       <tr><td><strong>Tc adotado (≥ 5 min — NBR 10844)</strong></td><td><strong>${fmt(tc_adot, 2)} min</strong></td></tr>
     </table>
     <p class="status-msg">&#9432; Use o Tc obtido como entrada no cálculo de Intensidade IDF (Card 2). NBR 10844: Tc mínimo = 5 min para áreas impermeáveis.</p>`;
@@ -318,15 +328,16 @@ function calcularAreaContribuicao() {
   const sumAC = superficiesDrenagem.reduce((s, x) => s + x.A_neta * x.C, 0);
   const sumA  = superficiesDrenagem.reduce((s, x) => s + x.A_neta, 0);
   const C_med = sumAC / sumA;
-  // Q = i × (sumAC) / 60.000   [L/s]    (i em mm/h, A em m²)
-  const Q_Ls  = i_chuva * sumAC / 60000;
+  // NBR 10844: Q = i × A / 60   [L/min]   (i em mm/h, A em m²)
+  const Q_Lmin = i_chuva * sumAC / 60;    // L/min
+  const Q_Ls   = i_chuva * sumAC / 3600;  // L/s
 
   el.className = 'resultado resultado-ok';
   el.innerHTML = `
     <h4>Resultados — Área de Contribuição (NBR 10844)</h4>
     <div class="result-main">
-      <div><div class="label">Área total efetiva</div><div class="value">${fmt(sumAC / C_med, 2)} m²</div></div>
-      <div><div class="label">Vazão Q</div><div class="value">${fmt(Q_Ls, 4)} L/s</div></div>
+      <div><div class="label">Vazão Q</div><div class="value">${fmt(Q_Lmin, 1)} L/min</div></div>
+      <div><div class="label">Área efetiva Σ(A×C)</div><div class="value">${fmt(sumAC, 2)} m²</div></div>
     </div>
     <table class="result-table">
       <tr><td>Nº de superfícies</td><td>${superficiesDrenagem.length}</td></tr>
@@ -334,9 +345,9 @@ function calcularAreaContribuicao() {
       <tr><td>Σ(A × C) ponderado</td><td>${fmt(sumAC, 2)} m²</td></tr>
       <tr><td>C médio ponderado</td><td>${fmt(C_med, 3)}</td></tr>
       <tr><td>Intensidade de chuva (i)</td><td>${fmt(i_chuva)} mm/h</td></tr>
-      <tr><td>Fórmula: Q = i × Σ(A×C) / 60.000</td><td><strong>Q = ${fmt(Q_Ls, 5)} L/s</strong></td></tr>
+      <tr><td>Fórmula: Q = i × Σ(A×C) / 60</td><td><strong>Q = ${fmt(Q_Lmin, 1)} L/min = ${fmt(Q_Ls, 3)} L/s</strong></td></tr>
     </table>
-    <p class="status-msg">&#9432; NBR 10844: área inclinada = (a + h/2) × b; projeção da cobertura inclui área sobreposta ao beiral.</p>`;
+    <p class="status-msg">&#9432; NBR 10844: área inclinada = (a + h/2) × b; projeção da cobertura inclui área sobreposta ao beiral. Use o Q em L/min nos cards de calhas e condutores.</p>`;
 }
 
 /* ============================================================
@@ -356,13 +367,12 @@ function calcularCalha() {
 
   const Qm3s = Q / 60000;  // L/min → m³/s
 
-  // Capacidades por DN (NBR 10844 Tabela 1 — calha semicircular horizontal, n=0,011, I=0,5%)
-  // Valores de capacidade retirados da Tabela 1 da NBR 10844
+  // Capacidades por DN (NBR 10844 Tabela 1 — calha semicircular, n=0,011, I=0,5%)
   const TAB_CALHA_SEMI = [
-    { dn: 100, Q_ref: 3.3 },    // L/min (i=0,5%, n=0,011)
-    { dn: 125, Q_ref: 5.8 },
-    { dn: 150, Q_ref: 9.1 },
-    { dn: 200, Q_ref: 18.4 },
+    { dn: 100, Q_ref: 130 },   // L/min (I=0,5%, n=0,011)
+    { dn: 125, Q_ref: 236 },
+    { dn: 150, Q_ref: 384 },
+    { dn: 200, Q_ref: 829 },
   ];
 
   // Ajuste de capacidade pela declividade real vs referência (0,5% = 0,005 m/m)

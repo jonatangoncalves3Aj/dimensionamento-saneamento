@@ -24,6 +24,7 @@ function gerarMemorial() {
     { id: 'resultado-reservatorio-superior',  titulo: 'Água Fria — Reservatório Superior (RS)'      },
     { id: 'resultado-bomba',                  titulo: 'Água Fria — Bomba de Recalque'               },
     { id: 'resultado-diametro-agua',          titulo: 'Água Fria — Diâmetro de Tubulação'           },
+    { id: 'resultado-pesos',                  titulo: 'Água Fria — Vazão de Projeto por Pesos (NBR 5626)' },
     { id: 'resultado-hazen',                  titulo: 'Água Fria — Perda de Carga (Hazen-Williams)' },
     { id: 'resultado-pressao-critica',        titulo: 'Água Fria — Pressão no Ponto Crítico'        },
     // Água Quente

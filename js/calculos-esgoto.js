@@ -6,6 +6,8 @@ function calcularVazaoEsgoto() {
   const retorno     = parseFloat(document.getElementById('esg-coef-retorno').value) / 100;
   const K1          = parseFloat(document.getElementById('esg-k1').value);
   const K2          = parseFloat(document.getElementById('esg-k2').value);
+  const taxaInf     = parseFloat(document.getElementById('esg-taxa-inf')?.value) || 0;   // L/s·km
+  const extRede     = parseFloat(document.getElementById('esg-ext-rede')?.value) || 0;   // km
 
   const el = document.getElementById('resultado-vazao-esgoto');
 
@@ -19,21 +21,20 @@ function calcularVazaoEsgoto() {
   // Qmed = (habitantes × consumo_per_capita × C1) / 86400
   const Qmed = (habitantes * consumo * retorno) / 86400;  // L/s
 
-  // Vazão de contribuição de infiltração (NBR 9649: 0,05 L/s por km de rede por mm de DN)
-  // Adota-se valor típico de 0,0001 L/s por habitante para estimativa simplificada
-  const Qinf = habitantes * 0.0001;  // L/s (estimativa)
+  // Vazão de infiltração (NBR 9649: por extensão de rede, em L/s·km)
+  const Qinf = taxaInf * extRede;  // L/s
 
   // Vazão máxima de projeto
   const Qmax = Qmed * K1 * K2 + Qinf;  // L/s
 
-  // Vazão mínima (NBR 9649: 1,5 L/s mínimo para ramais prediais)
-  const Qmin = Math.max(Qmax * 0.2, 1.5);  // L/s
+  // Vazão mínima de projeto por trecho (NBR 9649: 1,5 L/s)
+  const Qproj = Math.max(Qmax, 1.5);  // L/s
 
   el.className = 'resultado resultado-ok';
   el.innerHTML = `
     <h4>Resultados — Vazão de Esgoto</h4>
     <div class="result-main">
-      <div><div class="label">Vazão máxima de projeto</div><div class="value">${fmt(Qmax)} L/s</div></div>
+      <div><div class="label">Vazão de projeto</div><div class="value">${fmt(Qproj)} L/s</div></div>
       <span class="result-badge ok">&#10003; NBR 9649</span>
     </div>
     <table class="result-table">
@@ -43,11 +44,11 @@ function calcularVazaoEsgoto() {
       <tr><td>Coef. variação diária K1</td><td>${K1}</td></tr>
       <tr><td>Coef. variação horária K2</td><td>${K2}</td></tr>
       <tr><td>Vazão média de esgoto</td><td>${Qmed.toFixed(4)} L/s</td></tr>
-      <tr><td>Vazão de infiltração estimada</td><td>${Qinf.toFixed(4)} L/s</td></tr>
-      <tr><td>Vazão máxima (K1 × K2 + Qinf)</td><td><strong>${fmt(Qmax)} L/s</strong></td></tr>
-      <tr><td>Vazão mínima adotada</td><td>${fmt(Qmin)} L/s</td></tr>
+      <tr><td>Infiltração (${fmt(taxaInf, 2)} L/s·km × ${fmt(extRede, 2)} km)</td><td>${Qinf.toFixed(4)} L/s</td></tr>
+      <tr><td>Vazão máxima (Qméd × K1 × K2 + Qinf)</td><td>${fmt(Qmax)} L/s</td></tr>
+      <tr><td>Vazão de projeto adotada (mín. 1,5 L/s)</td><td><strong>${fmt(Qproj)} L/s</strong></td></tr>
     </table>
-    <p class="status-msg">&#9432; Vazão de projeto = Qméd × K1 × K2 + Qinf (NBR 9649 §6.3).</p>`;
+    <p class="status-msg">&#9432; Vazão de projeto = Qméd × K1 × K2 + Qinf, não inferior a 1,5 L/s por trecho (NBR 9649 §5.1.5).</p>`;
 }
 
 function calcularManning() {
@@ -144,8 +145,9 @@ function calcularDeclividade() {
 
   const D = DN / 1000;  // m
 
-  // NBR 9649 — Declividade mínima: Imin = 0,0055 × D^(-0,467) (m/m)
-  const Imin_formula = 0.0055 * Math.pow(D, -0.467);  // m/m
+  // NBR 9649 — Declividade mínima: Imin = 0,0055 × Qi^(-0,47) (m/m), Qi em L/s
+  // (derivada do critério de tensão trativa mínima de 1,0 Pa)
+  const Imin_formula = 0.0055 * Math.pow(Q, -0.47);  // m/m
 
   // Alternativa: declividade mínima que garante V >= 0,6 m/s (seção plena)
   // V = (1/n) × R^(2/3) × I^(1/2) → I = (V × n / R^(2/3))^2
@@ -190,7 +192,7 @@ function calcularDeclividade() {
       <tr><td>Diâmetro nominal DN</td><td>${DN} mm</td></tr>
       <tr><td>Coeficiente n (Manning)</td><td>${n}</td></tr>
       <tr><td>Raio hidráulico (seção plena)</td><td>${(R*1000).toFixed(2)} mm</td></tr>
-      <tr><td>Declividade mínima — fórmula NBR 9649</td><td>${(Imin_formula*1000).toFixed(3)} ‰</td></tr>
+      <tr><td>Declividade mínima — NBR 9649 (0,0055·Q<sup>-0,47</sup>)</td><td>${(Imin_formula*1000).toFixed(3)} ‰</td></tr>
       <tr><td>Declividade mínima — V ≥ 0,6 m/s</td><td>${(Imin_v06*1000).toFixed(3)} ‰</td></tr>
       <tr><td>Declividade mínima adotada</td><td><strong>${(Imin*1000).toFixed(3)} ‰ (${Imin.toFixed(6)} m/m)</strong></td></tr>
       <tr><td>Velocidade seção plena (Imin)</td><td>${V_plena_min.toFixed(3)} m/s</td></tr>

@@ -122,35 +122,61 @@ function calcularAquecedor() {
       <tr><td>Corrente (220 V)</td><td>${fmt(corrente_220, 1)} A</td></tr>
       <tr><td>Corrente (110 V)</td><td>${fmt(corrente_110, 1)} A</td></tr>`;
   } else if (tipo === 'gas') {
-    const pcs_gas  = parseFloat(document.getElementById('aq2-pcs').value) || 8500;  // kcal/m³ GN
+    const combustivel = document.getElementById('aq2-pcs').value;  // 'gn' | 'glp'
     const eta_gas  = parseFloat(document.getElementById('aq2-eta-gas').value) / 100 || 0.85;
-    const V_gas    = (E_kcal / (pcs_gas * eta_gas));  // m³ GN/dia
-    const Q_gas    = P_kcalh / (pcs_gas * eta_gas);   // m³/h vazão no pico
-    blocoTipo = `
-      <tr><td colspan="2"><strong>Aquecedor a Gás</strong></td></tr>
-      <tr><td>Poder calorífico superior PCS</td><td>${fmt(pcs_gas)} kcal/m³</td></tr>
-      <tr><td>Rendimento térmico η</td><td>${(eta_gas * 100).toFixed(0)}%</td></tr>
-      <tr><td>Consumo de gás diário</td><td><strong>${fmt(V_gas, 3)} m³/dia</strong></td></tr>
-      <tr><td>Vazão máxima de gás (pico)</td><td>${fmt(Q_gas, 3)} m³/h</td></tr>
-      <tr><td>Capacidade do aquecedor</td><td>${fmt(P_kcalh / eta_gas)} kcal/h = ${fmt(P_kW / eta_gas, 2)} kW</td></tr>`;
+    if (combustivel === 'glp') {
+      // GLP: PCS ≈ 11.750 kcal/kg (comercializado em massa — botijões)
+      const pcs_kg   = 11750;                                  // kcal/kg
+      const M_gas    = E_kcal / (pcs_kg * eta_gas);            // kg/dia
+      const M_pico   = P_kcalh / (pcs_kg * eta_gas);           // kg/h no pico
+      const botijoesMes = (M_gas * 30) / 13;                   // botijões P13/mês
+      blocoTipo = `
+        <tr><td colspan="2"><strong>Aquecedor a GLP</strong></td></tr>
+        <tr><td>Poder calorífico superior PCS</td><td>${fmt(pcs_kg)} kcal/kg</td></tr>
+        <tr><td>Rendimento térmico η</td><td>${(eta_gas * 100).toFixed(0)}%</td></tr>
+        <tr><td>Consumo de GLP diário</td><td><strong>${fmt(M_gas, 3)} kg/dia</strong></td></tr>
+        <tr><td>Consumo mensal (30 dias)</td><td>${fmt(M_gas * 30, 1)} kg/mês ≈ ${fmt(botijoesMes, 1)} botijão(ões) P13</td></tr>
+        <tr><td>Vazão máxima de GLP (pico)</td><td>${fmt(M_pico, 3)} kg/h</td></tr>
+        <tr><td>Capacidade do aquecedor</td><td>${fmt(P_kcalh / eta_gas)} kcal/h = ${fmt(P_kW / eta_gas, 2)} kW</td></tr>`;
+    } else {
+      // Gás natural: PCS ≈ 9.400 kcal/m³
+      const pcs_gas  = 9400;                                   // kcal/m³
+      const V_gas    = E_kcal / (pcs_gas * eta_gas);           // m³/dia
+      const Q_gas    = P_kcalh / (pcs_gas * eta_gas);          // m³/h no pico
+      blocoTipo = `
+        <tr><td colspan="2"><strong>Aquecedor a Gás Natural</strong></td></tr>
+        <tr><td>Poder calorífico superior PCS</td><td>${fmt(pcs_gas)} kcal/m³</td></tr>
+        <tr><td>Rendimento térmico η</td><td>${(eta_gas * 100).toFixed(0)}%</td></tr>
+        <tr><td>Consumo de gás diário</td><td><strong>${fmt(V_gas, 3)} m³/dia</strong></td></tr>
+        <tr><td>Vazão máxima de gás (pico)</td><td>${fmt(Q_gas, 3)} m³/h</td></tr>
+        <tr><td>Capacidade do aquecedor</td><td>${fmt(P_kcalh / eta_gas)} kcal/h = ${fmt(P_kW / eta_gas, 2)} kW</td></tr>`;
+    }
   } else {
-    // Solar
+    // Solar — dimensionamento conforme NBR 15569
     const I_solar = parseFloat(document.getElementById('aq2-irrad').value) || 4.5;   // kWh/m²·dia
     const eta_col = parseFloat(document.getElementById('aq2-eta-col').value) / 100 || 0.60;
     const fs      = parseFloat(document.getElementById('aq2-fs-sol').value) / 100 || 0.70;  // fração solar
-    const E_solar = E_kWh * fs;       // kWh/dia cobertura solar
+    const perdas  = 0.15;                           // perdas térmicas do sistema (~15%)
+    const E_solar = E_kWh * fs * (1 + perdas);      // kWh/dia a captar (com perdas)
     const A_col   = E_solar / (I_solar * eta_col);  // m²
     const nColMed  = Math.ceil(A_col / 2.0);        // nº de coletores (2 m² cada)
     const E_aux    = E_kWh * (1 - fs);               // kWh/dia backup elétrico/gás
     blocoTipo = `
-      <tr><td colspan="2"><strong>Aquecedor Solar</strong></td></tr>
+      <tr><td colspan="2"><strong>Aquecedor Solar (NBR 15569)</strong></td></tr>
       <tr><td>Irradiação solar média diária (H)</td><td>${fmt(I_solar, 2)} kWh/m²·dia</td></tr>
       <tr><td>Rendimento dos coletores η</td><td>${(eta_col * 100).toFixed(0)}%</td></tr>
       <tr><td>Fração solar adotada (fs)</td><td>${(fs * 100).toFixed(0)}%</td></tr>
+      <tr><td>Perdas térmicas do sistema</td><td>${(perdas * 100).toFixed(0)}% (tubulações + reservatório)</td></tr>
       <tr><td>Área de coletores necessária</td><td><strong>${fmt(A_col, 2)} m²</strong></td></tr>
       <tr><td>Nº de coletores (~2 m² cada)</td><td>${nColMed} painel(is)</td></tr>
-      <tr><td>Energia de backup necessária</td><td>${fmt(E_aux, 3)} kWh/dia (${(1-fs)*100}% do total)</td></tr>`;
+      <tr><td>Energia de backup necessária</td><td>${fmt(E_aux, 3)} kWh/dia (${((1-fs)*100).toFixed(0)}% do total)</td></tr>`;
   }
+
+  // Volume do reservatório térmico (boiler) — consumo no período de pico
+  const fracaoPico = (parseFloat(document.getElementById('aq2-frac-pico')?.value) || 35) / 100;
+  const V_boiler_calc = V_aq * fracaoPico;
+  const boilersComerciais = [100, 150, 200, 300, 400, 500, 600, 800, 1000, 1500, 2000];
+  const V_boiler = boilersComerciais.find(v => v >= V_boiler_calc) || boilersComerciais[boilersComerciais.length - 1];
 
   el.className = 'resultado resultado-ok';
   el.innerHTML = `
@@ -158,6 +184,7 @@ function calcularAquecedor() {
     <div class="result-main">
       <div><div class="label">Energia necessária</div><div class="value">${fmt(E_kWh, 3)} kWh/dia</div></div>
       <div><div class="label">Potência de aquecimento</div><div class="value">${fmt(P_kW, 2)} kW</div></div>
+      <div><div class="label">Boiler</div><div class="value">${V_boiler} L</div></div>
     </div>
     <table class="result-table">
       <tr><td>Volume de AQ a aquecer</td><td>${fmt(V_aq)} L/dia</td></tr>
@@ -166,8 +193,12 @@ function calcularAquecedor() {
       <tr><td>Tempo de recuperação adotado</td><td>${t_rec} h</td></tr>
       <tr><td>Potência de aquecimento base</td><td>${fmt(P_kW, 2)} kW = ${fmt(P_kcalh)} kcal/h</td></tr>
       ${blocoTipo}
+      <tr><td colspan="2"><strong>Reservatório térmico (boiler)</strong></td></tr>
+      <tr><td>Fração de consumo no pico</td><td>${(fracaoPico * 100).toFixed(0)}% do consumo diário</td></tr>
+      <tr><td>Volume calculado</td><td>${fmt(V_boiler_calc)} L</td></tr>
+      <tr><td><strong>Boiler comercial adotado</strong></td><td><strong>${V_boiler} L</strong></td></tr>
     </table>
-    <p class="status-msg">&#9432; Volume do boiler/reservatório térmico: geralmente 1 a 2× o consumo horário de pico. NBR 7198: temperatura de distribuição ≥ 60°C na saída do gerador para inibir Legionella.</p>`;
+    <p class="status-msg">&#9432; NBR 7198: temperatura de distribuição ≥ 60°C na saída do gerador para inibir Legionella. Para aquecedores de passagem (sem acumulação), o boiler é dispensável.</p>`;
 }
 
 /* ============================================================
@@ -207,7 +238,14 @@ function calcularTubulacaoAguaQuente() {
 
   const matNomes = { cpvc: 'CPVC (para água quente)', cobre: 'Cobre', pprc: 'PPR-C (polipropileno copolímero)' };
 
-  el.className = 'resultado resultado-ok';
+  // Água quente: velocidade recomendada ≤ 2,0 m/s (ruído e erosão-corrosão)
+  let statusAQ = 'ok', msgVel = `&#10003; Velocidade real (${fmt(V_real, 2)} m/s) ≤ 2,0 m/s — adequada para água quente.`;
+  if (V_real > 2.0) {
+    statusAQ = 'aviso';
+    msgVel = `&#9888; Velocidade real (${fmt(V_real, 2)} m/s) acima de 2,0 m/s — risco de ruído e erosão em tubulação de água quente. Adote DN maior.`;
+  }
+
+  el.className = `resultado resultado-${statusAQ}`;
   el.innerHTML = `
     <h4>Resultados — Tubulação de Água Quente</h4>
     <div class="result-main">
@@ -225,5 +263,6 @@ function calcularTubulacaoAguaQuente() {
       <tr><td>Expansão por 10 m de tubulação</td><td>${fmt(deltaL, 2)} mm — prever lira ou curva de dilatação</td></tr>
     </table>
     <p class="status-msg">&#9432; NBR 7198: isolamento térmico obrigatório em tubulações ≥ DN 25 mm e em trechos expostos. Temperatura de distribuição ≥ 60°C.</p>
+    <p class="status-msg">${msgVel}</p>
     <p class="status-msg">&#9432; CPVC: máx. 95°C; PPR-C: máx. 95°C (PN 20); Cobre: máx. 110°C.</p>`;
 }

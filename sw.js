@@ -1,5 +1,5 @@
 // Service Worker — Dimensionamento de Saneamento
-const CACHE = 'saneamento-v6';
+const CACHE = 'saneamento-v7';
 const ASSETS = [
   './',
   './index.html',

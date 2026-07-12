@@ -104,6 +104,16 @@ function calcularDiametroAgua() {
   const Dnom = comerciais.find(d => d >= Dmm) || comerciais[comerciais.length - 1];
   const V_real = Qm3s / (Math.PI * (Dnom / 1000) ** 2 / 4);
 
+  // Critério dinâmico NBR 5626: v ≤ 14·√D (D em m) — mais restritivo em DN pequenos
+  const V_lim_din = 14 * Math.sqrt(Dnom / 1000);
+  let msgDin = '';
+  if (V_real > V_lim_din) {
+    status = status === 'ok' ? 'aviso' : status;
+    msgDin = `&#9888; Velocidade real (${fmt(V_real, 2)} m/s) excede o limite dinâmico da NBR 5626 v ≤ 14·√D = ${fmt(V_lim_din, 2)} m/s para DN ${Dnom}. Adote DN maior.`;
+  } else {
+    msgDin = `&#10003; Critério dinâmico NBR 5626 atendido: v = ${fmt(V_real, 2)} m/s ≤ 14·√D = ${fmt(V_lim_din, 2)} m/s.`;
+  }
+
   el.className = `resultado resultado-${status}`;
   el.innerHTML = `
     <h4>Resultados — Diâmetro da Tubulação</h4>
@@ -118,8 +128,10 @@ function calcularDiametroAgua() {
       <tr><td>Diâmetro teórico</td><td>${fmt(Dmm, 2)} mm</td></tr>
       <tr><td><strong>DN comercial adotado (PVC)</strong></td><td><strong>DN ${Dnom} mm</strong></td></tr>
       <tr><td>Velocidade real (DN adotado)</td><td>${fmt(V_real, 3)} m/s</td></tr>
+      <tr><td>Limite dinâmico v ≤ 14·√D</td><td>${fmt(V_lim_din, 2)} m/s</td></tr>
     </table>
-    <p class="status-msg">${statusMsg}</p>`;
+    <p class="status-msg">${statusMsg}</p>
+    <p class="status-msg">${msgDin}</p>`;
 }
 
 /* ============================================================
@@ -302,6 +314,8 @@ function calcularBomba() {
   const eta_m  = parseFloat(document.getElementById('bom-eta-m').value) / 100 || 0.90;
   const fs     = parseFloat(document.getElementById('bom-fs').value) || 1.20;
   const hz_suc = parseFloat(document.getElementById('bom-hz-suc').value) || 0;  // m (altura sucção)
+  const altitude = parseFloat(document.getElementById('bom-altitude')?.value) || 0;  // m
+  const hf_suc_in = parseFloat(document.getElementById('bom-hf-suc')?.value);        // m.c.a (opcional)
   const el     = document.getElementById('resultado-bomba');
 
   if (!V_L || !T_op || !Hg || V_L <= 0 || T_op <= 0 || T_op > 20 || Hg <= 0) {
@@ -332,10 +346,21 @@ function calcularBomba() {
   const motores = [0.33, 0.5, 0.75, 1.0, 1.5, 2.0, 3.0, 4.0, 5.0, 7.5, 10.0, 15.0, 20.0];
   const motorAdot = motores.find(m => m >= P_CV) || motores[motores.length - 1];
 
-  // NPSH disponível (simplificado)
-  const Pa_m  = 10.33;     // pressão atmosférica (m.c.a) ao nível do mar
+  // Diâmetro de recalque — fórmula de Bresse: D = 1,3 × X^0,25 × √Q  (X = horas/24)
+  const X_bresse   = T_op / 24;
+  const D_bresse_m = 1.3 * Math.pow(X_bresse, 0.25) * Math.sqrt(Q_m3s);  // m
+  const D_bresse_mm = D_bresse_m * 1000;
+  const dnAgua = [20, 25, 32, 40, 50, 60, 75, 85, 100, 110, 125, 150, 200];
+  const DN_rec = dnAgua.find(d => d >= D_bresse_mm) || dnAgua[dnAgua.length - 1];
+  const DN_suc = dnAgua.find(d => d > DN_rec) || DN_rec;  // sucção = DN comercial seguinte
+
+  // NPSH disponível
+  // Pressão atmosférica corrigida pela altitude (fórmula barométrica)
+  const Pa_m  = 10.33 * Math.pow(1 - 2.25577e-5 * altitude, 5.25588);  // m.c.a
   const Pv_m  = 0.24;      // pressão de vapor da água a 20°C (m.c.a)
-  const hf_suc = hf_rec * 0.15;  // estimativa perda na sucção (15% do total)
+  // Perda na sucção: valor informado pelo usuário ou estimativa de 15% do recalque
+  const hf_suc = (!isNaN(hf_suc_in) && hf_suc_in >= 0) ? hf_suc_in : hf_rec * 0.15;
+  const hf_suc_estimado = isNaN(hf_suc_in) || hf_suc_in < 0;
   const NPSHd = Pa_m - Pv_m - hz_suc - hf_suc;
   const alertaNPSH = NPSHd < 3.0
     ? `&#9888; NPSH disponível (${fmt(NPSHd, 2)} m) abaixo de 3,0 m — risco de cavitação. Reduza a altura de sucção ou verifique com fabricante.`
@@ -370,6 +395,13 @@ function calcularBomba() {
       <tr><td>Fator de segurança (fs)</td><td>${fs}</td></tr>
       <tr><td>Potência com fator de segurança</td><td>${fmt(P_kW, 3)} kW = ${fmt(P_CV, 3)} CV</td></tr>
       <tr><td><strong>Motor comercial adotado</strong></td><td><strong>${motorAdot} CV = ${fmt(motorAdot * 0.7355, 2)} kW</strong></td></tr>
+      <tr><td colspan="2"><strong>Tubulações (fórmula de Bresse)</strong></td></tr>
+      <tr><td>Diâmetro de recalque — D = 1,3·X<sup>0,25</sup>·√Q (X = ${fmt(X_bresse, 3)})</td><td>${fmt(D_bresse_mm, 1)} mm → <strong>DN ${DN_rec} mm</strong></td></tr>
+      <tr><td>Diâmetro de sucção (DN comercial seguinte)</td><td><strong>DN ${DN_suc} mm</strong></td></tr>
+      <tr><td colspan="2"><strong>NPSH</strong></td></tr>
+      <tr><td>Pressão atmosférica local (altitude ${fmt(altitude, 0)} m)</td><td>${fmt(Pa_m, 2)} m.c.a</td></tr>
+      <tr><td>Perda de carga na sucção${hf_suc_estimado ? ' (estimada ~15% do recalque)' : ' (informada)'}</td><td>${fmt(hf_suc, 2)} m.c.a</td></tr>
+      <tr><td>NPSH disponível</td><td>${fmt(NPSHd, 2)} m</td></tr>
     </table>
     <p class="status-msg">${alertaNPSH}</p>
     <p class="status-msg">&#9432; Verificar curva da bomba: Q × Hm deve estar na faixa de melhor rendimento. Instalar válvula de pé com crivo na sucção e válvula de retenção na recalque.</p>`;
@@ -389,43 +421,170 @@ function calcularPressaoCritica() {
     return;
   }
 
-  const P_disp = H_caixa - cotaCrit - hf;   // m.c.a
+  const P_din = H_caixa - cotaCrit - hf;   // m.c.a — pressão DINÂMICA (com escoamento)
+  const P_est = H_caixa - cotaCrit;         // m.c.a — pressão ESTÁTICA (sem escoamento)
 
   let status = 'ok', alertas = [];
-  if (P_disp < 5.0) {
+
+  // Verificação dinâmica — NBR 5626:2020: mínimo 10 kPa (1,0 m.c.a) em qualquer ponto
+  if (P_din < 1.0) {
     status = 'erro';
-    alertas.push(`&#10007; Pressão insuficiente (${fmt(P_disp, 2)} m.c.a < 5,0 m.c.a mínimo NBR 5626). Elevar a caixa d'água ou aumentar diâmetro da tubulação.`);
-  } else if (P_disp < 10.0) {
+    alertas.push(`&#10007; Pressão dinâmica (${fmt(P_din, 2)} m.c.a) abaixo do mínimo normativo de 1,0 m.c.a / 10 kPa (NBR 5626:2020). Elevar a caixa d'água ou aumentar diâmetros.`);
+  } else if (P_din < 5.0) {
     status = 'aviso';
-    alertas.push(`&#9888; Pressão de ${fmt(P_disp, 2)} m.c.a adequada para torneiras (≥ 5 m.c.a), mas insuficiente para chuveiros (recomendado ≥ 10 m.c.a).`);
+    alertas.push(`&#9888; Pressão dinâmica de ${fmt(P_din, 2)} m.c.a atende o mínimo normativo (1,0 m.c.a), mas está abaixo dos 5 m.c.a recomendados para bom funcionamento de torneiras.`);
+  } else if (P_din < 10.0) {
+    status = 'aviso';
+    alertas.push(`&#9888; Pressão dinâmica de ${fmt(P_din, 2)} m.c.a adequada para torneiras (conforto ≥ 5 m.c.a), mas abaixo dos 10 m.c.a recomendados para chuveiros convencionais.`);
   } else {
-    alertas.push(`&#10003; Pressão de ${fmt(P_disp, 2)} m.c.a adequada para todos os aparelhos (torneiras: ≥ 5 m.c.a; chuveiros: ≥ 10 m.c.a).`);
+    alertas.push(`&#10003; Pressão dinâmica de ${fmt(P_din, 2)} m.c.a adequada para todos os aparelhos (conforto: torneiras ≥ 5, chuveiros ≥ 10 m.c.a).`);
   }
 
-  if (P_disp > 40.0) {
-    status = 'aviso';
-    alertas.push(`&#9888; Pressão (${fmt(P_disp, 2)} m.c.a) excede 40 m.c.a — NBR 5626 exige válvula redutora de pressão.`);
-  }
-  if (P_disp > 20.0 && status === 'ok') {
-    alertas.push(`&#9432; Pressão > 20 m.c.a: verificar se unidades autônomas possuem reservatório próprio (NBR 5626 §5.4).`);
+  // Verificação estática — NBR 5626: máximo 400 kPa (40 m.c.a), avaliada SEM escoamento
+  if (P_est > 40.0) {
+    status = status === 'erro' ? 'erro' : 'aviso';
+    alertas.push(`&#9888; Pressão estática (${fmt(P_est, 2)} m.c.a, sem escoamento) excede 40 m.c.a / 400 kPa — NBR 5626 exige válvula redutora de pressão neste ponto.`);
+  } else {
+    alertas.push(`&#10003; Pressão estática de ${fmt(P_est, 2)} m.c.a ≤ 40 m.c.a (400 kPa) — dentro do limite da NBR 5626.`);
   }
 
   el.className = `resultado resultado-${status}`;
   el.innerHTML = `
     <h4>Resultados — Pressão no Ponto Crítico</h4>
     <div class="result-main">
-      <div><div class="label">Pressão disponível</div><div class="value">${fmt(P_disp, 2)} m.c.a</div></div>
+      <div><div class="label">Pressão dinâmica</div><div class="value">${fmt(P_din, 2)} m.c.a</div></div>
+      <div><div class="label">Pressão estática</div><div class="value">${fmt(P_est, 2)} m.c.a</div></div>
       <span class="result-badge ${status}">${status === 'ok' ? '&#10003; Adequada' : status === 'aviso' ? '&#9888; Atenção' : '&#10007; Insuficiente'}</span>
     </div>
     <table class="result-table">
-      <tr><td>Fórmula</td><td>P = H_caixa − cota_crítica − hf</td></tr>
       <tr><td>Elevação do fundo da caixa d'água (H_caixa)</td><td>${fmt(H_caixa, 2)} m</td></tr>
       <tr><td>Cota do ponto crítico (mais desfavorável)</td><td>${fmt(cotaCrit, 2)} m</td></tr>
       <tr><td>Perda de carga total na distribuição (hf)</td><td>${fmt(hf, 2)} m.c.a</td></tr>
-      <tr><td><strong>Pressão disponível no ponto crítico</strong></td><td><strong>${fmt(P_disp, 2)} m.c.a</strong></td></tr>
-      <tr><td>Pressão mínima (torneiras) — NBR 5626</td><td>5,0 m.c.a</td></tr>
-      <tr><td>Pressão mínima (chuveiros) — NBR 5626</td><td>10,0 m.c.a</td></tr>
-      <tr><td>Pressão máxima — NBR 5626</td><td>40,0 m.c.a</td></tr>
+      <tr><td><strong>Pressão dinâmica</strong> (P = H − cota − hf)</td><td><strong>${fmt(P_din, 2)} m.c.a = ${fmt(P_din * 9.81, 1)} kPa</strong></td></tr>
+      <tr><td><strong>Pressão estática</strong> (P = H − cota, hf = 0)</td><td><strong>${fmt(P_est, 2)} m.c.a = ${fmt(P_est * 9.81, 1)} kPa</strong></td></tr>
+      <tr><td>Mínimo normativo (dinâmica) — NBR 5626:2020</td><td>1,0 m.c.a (10 kPa)</td></tr>
+      <tr><td>Recomendação de conforto</td><td>torneiras ≥ 5 m.c.a; chuveiros ≥ 10 m.c.a</td></tr>
+      <tr><td>Máximo normativo (estática) — NBR 5626</td><td>40 m.c.a (400 kPa)</td></tr>
     </table>
     ${alertas.map(a => `<p class="status-msg">${a}</p>`).join('')}`;
+}
+
+/* ============================================================
+   8. VAZÃO DE PROJETO — MÉTODO DOS PESOS RELATIVOS (NBR 5626)
+   ============================================================ */
+// Pesos relativos dos pontos de utilização — NBR 5626 Tabela A.1
+const TAB_PESOS_NBR5626 = [
+  { nome: 'Bacia sanitária c/ caixa de descarga',   peso: 0.3,  dnMin: 15 },
+  { nome: 'Bacia sanitária c/ válvula de descarga', peso: 32,   dnMin: 40 },
+  { nome: 'Banheira',                                peso: 1.0,  dnMin: 15 },
+  { nome: 'Bidê',                                    peso: 0.1,  dnMin: 15 },
+  { nome: 'Chuveiro / ducha',                        peso: 0.4,  dnMin: 15 },
+  { nome: 'Chuveiro elétrico',                       peso: 0.1,  dnMin: 15 },
+  { nome: 'Lavatório',                               peso: 0.3,  dnMin: 15 },
+  { nome: 'Máquina de lavar louça',                  peso: 1.0,  dnMin: 20 },
+  { nome: 'Máquina de lavar roupa',                  peso: 1.0,  dnMin: 20 },
+  { nome: 'Mictório c/ válvula',                     peso: 0.3,  dnMin: 15 },
+  { nome: 'Pia de cozinha',                          peso: 0.7,  dnMin: 15 },
+  { nome: 'Tanque de lavar roupa',                   peso: 0.7,  dnMin: 15 },
+  { nome: 'Torneira de jardim / lavagem',            peso: 0.4,  dnMin: 15 },
+];
+
+let aparelhosPesos = [];
+
+function inicializarSeletorPesos() {
+  const sel = document.getElementById('peso-aparelho-sel');
+  if (!sel || sel.options.length > 1) return;
+  TAB_PESOS_NBR5626.forEach((a, i) => {
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = `${a.nome} — P = ${fmt(a.peso, 1)}`;
+    sel.appendChild(opt);
+  });
+}
+
+function adicionarAparelhoPeso() {
+  const sel = document.getElementById('peso-aparelho-sel');
+  const qtd = parseInt(document.getElementById('peso-qtd').value) || 1;
+  if (!sel || sel.value === '' || qtd < 1) { alert('Selecione um aparelho e a quantidade.'); return; }
+  const ap = TAB_PESOS_NBR5626[parseInt(sel.value)];
+  const existente = aparelhosPesos.find(x => x.nome === ap.nome);
+  if (existente) existente.qtd += qtd;
+  else aparelhosPesos.push({ nome: ap.nome, peso: ap.peso, qtd });
+  renderizarAparelhosPesos();
+}
+
+function removerAparelhoPeso(i) {
+  aparelhosPesos.splice(i, 1);
+  renderizarAparelhosPesos();
+}
+
+function renderizarAparelhosPesos() {
+  const tbody = document.getElementById('peso-tbody');
+  if (!tbody) return;
+  if (aparelhosPesos.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" class="predial-empty">Nenhum ponto de utilização adicionado.</td></tr>';
+    const tot = document.getElementById('peso-total');
+    if (tot) tot.textContent = '0,0';
+    return;
+  }
+  tbody.innerHTML = aparelhosPesos.map((a, i) => `
+    <tr>
+      <td>${a.nome}</td>
+      <td class="text-center">${a.qtd}</td>
+      <td class="text-center">${fmt(a.peso, 1)}</td>
+      <td class="text-center"><strong>${fmt(a.peso * a.qtd, 1)}</strong></td>
+      <td class="text-center"><button class="btn-remove-ap" onclick="removerAparelhoPeso(${i})" title="Remover">&#10005;</button></td>
+    </tr>`).join('');
+  const somaP = aparelhosPesos.reduce((s, a) => s + a.peso * a.qtd, 0);
+  const tot = document.getElementById('peso-total');
+  if (tot) tot.textContent = fmt(somaP, 1);
+}
+
+function calcularVazaoPesos() {
+  const el = document.getElementById('resultado-pesos');
+  if (aparelhosPesos.length === 0) {
+    mostrarErro(el, 'Adicione ao menos um ponto de utilização.');
+    return;
+  }
+
+  const somaP = aparelhosPesos.reduce((s, a) => s + a.peso * a.qtd, 0);
+  // NBR 5626: vazão de projeto do trecho Q = 0,30 × √(ΣP)  [L/s]
+  const Q_Ls  = 0.30 * Math.sqrt(somaP);
+  const Qm3s  = Q_Ls / 1000;
+
+  // DN pelo critério de velocidade da NBR 5626: v ≤ 14·√D (D em m), limite 3,0 m/s
+  const comerciais = [20, 25, 32, 40, 50, 60, 75, 85, 100, 110, 125, 150, 200];
+  let DN = null, V_real = 0, V_max = 0;
+  for (const d of comerciais) {
+    const Dm = d / 1000;
+    const v  = Qm3s / (Math.PI * Dm * Dm / 4);
+    const vlim = Math.min(14 * Math.sqrt(Dm), 3.0);
+    if (v <= vlim) { DN = d; V_real = v; V_max = vlim; break; }
+  }
+  if (!DN) {
+    DN = comerciais[comerciais.length - 1];
+    const Dm = DN / 1000;
+    V_real = Qm3s / (Math.PI * Dm * Dm / 4);
+    V_max  = Math.min(14 * Math.sqrt(Dm), 3.0);
+  }
+
+  const nPontos = aparelhosPesos.reduce((s, a) => s + a.qtd, 0);
+
+  el.className = 'resultado resultado-ok';
+  el.innerHTML = `
+    <h4>Resultados — Vazão de Projeto (Pesos Relativos NBR 5626)</h4>
+    <div class="result-main">
+      <div><div class="label">Vazão de projeto</div><div class="value">${fmt(Q_Ls, 3)} L/s</div></div>
+      <div><div class="label">DN sugerido</div><div class="value">DN ${DN} mm</div></div>
+    </div>
+    <table class="result-table">
+      <tr><td>Nº de pontos de utilização</td><td>${nPontos}</td></tr>
+      <tr><td>Soma dos pesos relativos (ΣP)</td><td>${fmt(somaP, 1)}</td></tr>
+      <tr><td>Fórmula NBR 5626</td><td>Q = 0,30 × √ΣP = 0,30 × √${fmt(somaP, 1)}</td></tr>
+      <tr><td><strong>Vazão de projeto do trecho</strong></td><td><strong>${fmt(Q_Ls, 3)} L/s = ${fmt(Q_Ls * 3.6, 2)} m³/h</strong></td></tr>
+      <tr><td>Critério de velocidade</td><td>v ≤ 14·√D e v ≤ 3,0 m/s (NBR 5626)</td></tr>
+      <tr><td><strong>DN comercial sugerido</strong></td><td><strong>DN ${DN} mm</strong></td></tr>
+      <tr><td>Velocidade real no DN</td><td>${fmt(V_real, 3)} m/s (limite ${fmt(V_max, 2)} m/s)</td></tr>
+    </table>
+    <p class="status-msg">&#9432; Método dos pesos relativos (NBR 5626): a vazão de projeto considera o uso simultâneo provável dos aparelhos. Aplicar trecho a trecho da rede, acumulando ΣP de jusante para montante.</p>`;
 }
