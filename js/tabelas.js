@@ -69,6 +69,45 @@ const TAB_DIST_DESCONECTOR = [
   { dn: 100, distMax: 2.40 },
 ];
 
+/* ── Tabela 6 — Colunas e barriletes de ventilação (NBR 8160) ── */
+// Para cada DN do tubo de queda × UHC: comprimento máximo permitido (m)
+// da coluna de ventilação, por DN da coluna.
+const TAB_COLUNA_VENTILACAO = [
+  { tq: 40,  uhcMax: 8,   comp: { 40: 46 } },
+  { tq: 50,  uhcMax: 12,  comp: { 40: 23, 50: 61 } },
+  { tq: 50,  uhcMax: 20,  comp: { 40: 15, 50: 46 } },
+  { tq: 75,  uhcMax: 10,  comp: { 40: 13, 50: 46, 75: 317 } },
+  { tq: 75,  uhcMax: 21,  comp: { 40: 10, 50: 33, 75: 247 } },
+  { tq: 75,  uhcMax: 53,  comp: { 40: 8,  50: 29, 75: 207 } },
+  { tq: 75,  uhcMax: 102, comp: { 40: 8,  50: 26, 75: 189 } },
+  { tq: 100, uhcMax: 43,  comp: { 50: 11, 75: 76, 100: 299 } },
+  { tq: 100, uhcMax: 140, comp: { 50: 8,  75: 61, 100: 229 } },
+  { tq: 100, uhcMax: 320, comp: { 50: 7,  75: 52, 100: 195 } },
+  { tq: 100, uhcMax: 530, comp: { 50: 6,  75: 46, 100: 177 } },
+];
+
+/**
+ * Seleciona o DN mínimo da coluna de ventilação (Tabela 6 — NBR 8160).
+ * @param {number} dnQueda - DN do tubo de queda (mm)
+ * @param {number} uhc - UHC total acumulado
+ * @param {number} comprimento - comprimento real da coluna de ventilação (m)
+ * @returns {{dn:number, compMax:number}|null} menor DN que atende, ou null se nenhum atende
+ */
+function selecionarColunaVentilacao(dnQueda, uhc, comprimento) {
+  // Linha da tabela: mesmo DN de tubo de queda (ou o imediatamente superior) e UHC dentro do limite
+  const candidatas = TAB_COLUNA_VENTILACAO.filter(r => r.tq >= dnQueda);
+  if (candidatas.length === 0) return null;
+  const tqSel = candidatas[0].tq === dnQueda ? dnQueda : candidatas[0].tq;
+  const linhas = candidatas.filter(r => r.tq === tqSel);
+  const linha  = linhas.find(r => uhc <= r.uhcMax) || linhas[linhas.length - 1];
+  // Menor DN de ventilação cujo comprimento máximo comporta o comprimento real
+  const dns = Object.keys(linha.comp).map(Number).sort((a, b) => a - b);
+  for (const dn of dns) {
+    if (comprimento <= linha.comp[dn]) return { dn, compMax: linha.comp[dn] };
+  }
+  return null;
+}
+
 /* ── Tabela 8 — Ramais de ventilação ── */
 // Sem vaso sanitário: UHC ≤12→DN40; 13–18→DN50; 19–36→DN75
 // Com vaso sanitário: UHC ≤17→DN50; 18–60→DN75

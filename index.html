@@ -477,6 +477,18 @@
                 <small class="hint">Típico: 1,15 – 1,25</small>
               </div>
             </div>
+            <div class="form-row-3">
+              <div class="form-group">
+                <label for="bom-altitude">Altitude local (m)</label>
+                <input type="number" id="bom-altitude" step="10" min="0" max="4000" value="0" placeholder="ex: 800" />
+                <small class="hint">Corrige a pressão atmosférica no NPSH</small>
+              </div>
+              <div class="form-group">
+                <label for="bom-hf-suc">Perda de carga na sucção (m.c.a)</label>
+                <input type="number" id="bom-hf-suc" step="0.1" min="0" placeholder="vazio = estimar" />
+                <small class="hint">Se vazio, estima 15% do recalque</small>
+              </div>
+            </div>
             <button class="btn-calc" onclick="calcularBomba()">Calcular Bomba</button>
           </form>
 
@@ -487,7 +499,8 @@
               <div class="formula-box">Hm = Hg + hf_recalque + perdas locais &nbsp;[m.c.a]</div>
               <div class="formula-box">P_hidráulica = ρ × g × Q × Hm &nbsp;[W]</div>
               <div class="formula-box">P_motor = P_hid / (η_bomba × η_motor) × fs &nbsp;[W]</div>
-              <div class="formula-box">NPSHd = 10,33 − Pv − hz − hf_sucção &nbsp;[m]</div>
+              <div class="formula-box">NPSHd = Pa(altitude) − Pv − hz − hf_sucção &nbsp;[m]</div>
+              <div class="formula-box">Bresse: D_recalque = 1,3 × X<sup>0,25</sup> × √Q &nbsp;(X = T_op/24)</div>
               <p>1 CV = 735,5 W | Rendimento total típico: 55–65%</p>
             </div>
           </details>
@@ -513,6 +526,48 @@
             <button class="btn-calc" onclick="calcularDiametroAgua()">Calcular Diâmetro</button>
           </form>
           <div id="resultado-diametro-agua" class="resultado hidden"></div>
+        </div>
+
+        <!-- ── 5b. VAZÃO DE PROJETO POR PESOS RELATIVOS ── -->
+        <div class="card card-full">
+          <h3 class="card-title">
+            <span class="nbr-badge">NBR 5626</span>
+            Vazão de Projeto — Método dos Pesos Relativos
+          </h3>
+          <p class="hint" style="margin-bottom:12px">Adicione os pontos de utilização do trecho. A vazão provável considera o uso simultâneo: Q = 0,30 × √ΣP [L/s].</p>
+          <div class="predial-add-row">
+            <div class="form-group" style="flex:2">
+              <label for="peso-aparelho-sel">Ponto de utilização</label>
+              <select id="peso-aparelho-sel">
+                <option value="">— selecione —</option>
+              </select>
+            </div>
+            <div class="form-group" style="flex:0 0 120px">
+              <label for="peso-qtd">Quantidade</label>
+              <input type="number" id="peso-qtd" min="1" value="1" placeholder="1" />
+            </div>
+            <div class="form-group" style="flex:0 0 auto;align-self:flex-end">
+              <button class="btn-calc" style="margin:0" onclick="adicionarAparelhoPeso()">+ Adicionar</button>
+            </div>
+          </div>
+          <div class="predial-table-wrap">
+            <table class="predial-table">
+              <thead>
+                <tr><th>Ponto de utilização</th><th>Qtd</th><th>P unit.</th><th>P total</th><th></th></tr>
+              </thead>
+              <tbody id="peso-tbody">
+                <tr><td colspan="5" class="predial-empty">Nenhum ponto de utilização adicionado.</td></tr>
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colspan="3"><strong>ΣP acumulado</strong></td>
+                  <td colspan="2"><strong id="peso-total">0,0</strong></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+          <button class="btn-calc" onclick="calcularVazaoPesos()">Calcular Vazão de Projeto</button>
+          <div id="resultado-pesos" class="resultado hidden"></div>
         </div>
 
         <!-- ── 6. HAZEN-WILLIAMS ── -->
@@ -678,6 +733,11 @@
                   <option value="solar">Solar (coletores)</option>
                 </select>
               </div>
+              <div class="form-group">
+                <label for="aq2-frac-pico">Fração de consumo no pico (%)</label>
+                <input type="number" id="aq2-frac-pico" min="10" max="100" value="35" />
+                <small class="hint">Dimensiona o boiler — típico 30–40%</small>
+              </div>
             </div>
             <!-- Bloco elétrico -->
             <div id="aq-bloco-eletrico">
@@ -690,11 +750,10 @@
             <div id="aq-bloco-gas" style="display:none">
               <div class="form-row-3">
                 <div class="form-group">
-                  <label for="aq2-pcs">PCS do gás (kcal/m³)</label>
+                  <label for="aq2-pcs">Combustível</label>
                   <select id="aq2-pcs">
-                    <option value="8500" selected>GN — 8.500 kcal/m³</option>
-                    <option value="6400">GLP — 6.400 kcal/m³ (propano)</option>
-                    <option value="5500">GLP — 5.500 kcal/m³ (butano)</option>
+                    <option value="gn" selected>Gás Natural — PCS 9.400 kcal/m³</option>
+                    <option value="glp">GLP — PCS 11.750 kcal/kg (botijão)</option>
                   </select>
                 </div>
                 <div class="form-group">
@@ -820,6 +879,22 @@
                 <input type="number" id="bi-hf" step="0.5" min="0" value="5" placeholder="ex: 5" />
               </div>
             </div>
+            <div class="form-row-3">
+              <div class="form-group">
+                <label for="bi-eta">Rendimento total η (%)</label>
+                <input type="number" id="bi-eta" min="30" max="90" value="65" placeholder="65" />
+                <small class="hint">Típico bomba de incêndio: 60–70%</small>
+              </div>
+              <div class="form-group">
+                <label for="bi-fs">Fator de segurança</label>
+                <input type="number" id="bi-fs" step="0.05" min="1" max="2" value="1.25" placeholder="1.25" />
+              </div>
+              <div class="form-group">
+                <label for="bi-hm-bomba">Hm da bomba escolhida (m.c.a) — opcional</label>
+                <input type="number" id="bi-hm-bomba" step="0.5" min="0" placeholder="catálogo" />
+                <small class="hint">Verifica a pressão real no bocal</small>
+              </div>
+            </div>
             <button class="btn-calc" onclick="calcularBombaIncendio()">Calcular Bomba</button>
           </form>
           <div id="resultado-bomba-incendio" class="resultado hidden"></div>
@@ -842,6 +917,14 @@
                 <label for="ti-L">Comprimento L (m)</label>
                 <input type="number" id="ti-L" step="1" min="1" value="30" placeholder="ex: 30" />
               </div>
+            </div>
+            <div class="form-group">
+              <label for="ti-c">Coeficiente C — Hazen-Williams</label>
+              <select id="ti-c">
+                <option value="100">100 — aço envelhecido (conservador)</option>
+                <option value="120" selected>120 — aço carbono / ferro galvanizado</option>
+                <option value="140">140 — CPVC (ramais)</option>
+              </select>
             </div>
             <button class="btn-calc" onclick="calcularTubulacaoIncendio()">Calcular hf</button>
           </form>
@@ -888,6 +971,15 @@
               <label for="esg-k2">Coeficiente de variação horária K2</label>
               <input type="number" id="esg-k2" step="0.01" min="1" value="1.50" placeholder="ex: 1.50" />
               <small class="hint">K2 = 1,50 (NBR 9649)</small>
+            </div>
+            <div class="form-group">
+              <label for="esg-taxa-inf">Taxa de infiltração (L/s·km)</label>
+              <input type="number" id="esg-taxa-inf" step="0.05" min="0" value="0.5" placeholder="ex: 0.5" />
+              <small class="hint">NBR 9649: 0,05 a 1,0 L/s·km conforme solo/lençol</small>
+            </div>
+            <div class="form-group">
+              <label for="esg-ext-rede">Extensão da rede (km)</label>
+              <input type="number" id="esg-ext-rede" step="0.01" min="0" value="1.0" placeholder="ex: 1.0" />
             </div>
             <button class="btn-calc" onclick="calcularVazaoEsgoto()">Calcular Vazão</button>
           </form>
@@ -1169,6 +1261,14 @@
                 <option value="0.015">0,015 — Concreto rugoso</option>
               </select>
             </div>
+            <div class="form-group">
+              <label for="tp-lamina">Lâmina máxima de projeto (y/D)</label>
+              <select id="tp-lamina">
+                <option value="0.6667" selected>2/3 D — condutor predial (NBR 10844)</option>
+                <option value="0.85">0,85 D — galeria urbana</option>
+                <option value="1.0">Seção plena (verificação)</option>
+              </select>
+            </div>
             <button class="btn-calc" onclick="calcularTubulacaoPluvial()">Calcular Diâmetro</button>
           </form>
           <div id="resultado-tubo-pluvial" class="resultado hidden"></div>
@@ -1382,6 +1482,11 @@
               </select>
               <small class="hint">Usado para dimensionar o coletor predial (Tab. 3)</small>
             </div>
+            <div class="form-group">
+              <label for="predial-comp-vent">Comprimento da coluna de ventilação (m)</label>
+              <input type="number" id="predial-comp-vent" step="0.5" min="0" value="0" placeholder="ex: 12" />
+              <small class="hint">Opcional — dimensiona a coluna pela Tab. 6 (0 = não verificar)</small>
+            </div>
           </div>
 
           <div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-top:0.5rem">
@@ -1486,10 +1591,10 @@
                 <label for="fs-temp">Temperatura do mês mais frio</label>
                 <select id="fs-temp">
                   <option value="frio">≤ 10°C — fria</option>
-                  <option value="medio" selected>10 a 25°C — temperada</option>
-                  <option value="quente">&gt; 25°C — quente</option>
+                  <option value="medio" selected>10 a 20°C — temperada</option>
+                  <option value="quente">&gt; 20°C — quente</option>
                 </select>
-                <small class="hint">Define T (Tab. 13) e K (Tab. 11)</small>
+                <small class="hint">Define K — taxa de acúmulo de lodo (Tab. 11)</small>
               </div>
               <div class="form-group">
                 <label for="fs-anos">Intervalo entre limpezas</label>
@@ -1505,15 +1610,22 @@
               <div class="form-group">
                 <label for="fs-formato">Formato da fossa</label>
                 <select id="fs-formato">
-                  <option value="retangular" selected>Prismático retangular (L=2B)</option>
+                  <option value="retangular" selected>Prismático retangular</option>
                   <option value="circular">Cilíndrico (circular)</option>
                 </select>
               </div>
             </div>
-            <div class="form-group">
-              <label for="fs-h">Altura útil adotada (H) — m</label>
-              <input type="number" id="fs-h" step="0.1" min="1.0" value="1.5" placeholder="ex: 1.5" />
-              <small class="hint">NBR 7229 Tab. 12: 1,20–2,20 m (V ≤6 m³); 1,50–2,50 m (6–10 m³); 1,80–2,80 m (>10 m³)</small>
+            <div class="form-row-3">
+              <div class="form-group">
+                <label for="fs-h">Altura útil adotada (H) — m</label>
+                <input type="number" id="fs-h" step="0.1" min="1.0" value="1.5" placeholder="ex: 1.5" />
+                <small class="hint">NBR 7229 Tab. 12: 1,20–2,20 m (V ≤6 m³); 1,50–2,50 m (6–10 m³); 1,80–2,80 m (>10 m³)</small>
+              </div>
+              <div class="form-group">
+                <label for="fs-razao">Proporção L/B (retangular)</label>
+                <input type="number" id="fs-razao" step="0.5" min="2" max="4" value="2" placeholder="2" />
+                <small class="hint">NBR 7229: entre 2:1 e 4:1</small>
+              </div>
             </div>
             <button class="btn-calc" onclick="calcularFossaSeptica()">Calcular fossa séptica</button>
           </form>
@@ -1575,9 +1687,14 @@
             <div class="form-group">
               <label for="fa-forma">Forma da seção transversal</label>
               <select id="fa-forma">
-                <option value="circular">Circular</option>
-                <option value="retangular">Retangular (L = 2B)</option>
+                <option value="circular">Cilíndrico (circular)</option>
+                <option value="retangular">Prismático retangular</option>
               </select>
+            </div>
+            <div class="form-group">
+              <label for="fa-razao">Proporção L/B (retangular)</label>
+              <input type="number" id="fa-razao" step="0.5" min="1" max="4" value="2" placeholder="2" />
+              <small class="hint">1:1 (quadrado) a 4:1</small>
             </div>
             <button class="btn-calc" onclick="calcularFiltroAnaerobio()">Calcular filtro</button>
           </form>
@@ -1585,8 +1702,8 @@
           <details class="explicacao">
             <summary>&#9432; Fórmulas e dados de referência (NBR 7229)</summary>
             <div class="explicacao-corpo">
-              <p><strong>Volume útil do filtro:</strong></p>
-              <div class="formula-box">V_filtro = Q × Tf / 24 &nbsp;[m³] &nbsp;&nbsp;(Q em m³/dia)</div>
+              <p><strong>Volume útil do filtro (NBR 13969 §5.2):</strong></p>
+              <div class="formula-box">V_útil = 1,60 × Q × Tf / 24 &nbsp;[m³] &nbsp;&nbsp;(Q em m³/dia; mín. 1,0 m³)</div>
               <p><strong>Área transversal:</strong></p>
               <div class="formula-box">A = V_filtro / h_mat &nbsp;[m²]</div>
               <p><strong>Dimensões (seção circular):</strong></p>
@@ -1663,18 +1780,33 @@
 
             <div class="form-group">
               <label for="su-tipo">Tipo de sumidouro</label>
-              <select id="su-tipo">
+              <select id="su-tipo" onchange="atualizarTipoSumidouro()">
                 <option value="poco">Poço absorvente (cilíndrico)</option>
+                <option value="prismatico">Prismático retangular</option>
                 <option value="vala">Vala de infiltração</option>
               </select>
             </div>
-            <div class="form-group">
-              <label for="su-d">Diâmetro do poço (D) — m <em>(para poço)</em></label>
+            <div class="form-group" id="su-bloco-poco">
+              <label for="su-d">Diâmetro do poço (D) — m</label>
               <input type="number" id="su-d" step="0.1" min="1.0" value="1.5" placeholder="ex: 1.5" />
               <small class="hint">NBR 13969: mínimo 1,0 m; recomendado 1,5 m</small>
             </div>
-            <div class="form-group">
-              <label for="su-larg">Largura da vala (B) — m <em>(para vala)</em></label>
+            <div id="su-bloco-prisma" style="display:none">
+              <div class="form-row-3">
+                <div class="form-group">
+                  <label for="su-b">Largura (B) — m</label>
+                  <input type="number" id="su-b" step="0.1" min="0.8" value="1.2" placeholder="ex: 1.2" />
+                  <small class="hint">Mínimo 0,80 m</small>
+                </div>
+                <div class="form-group">
+                  <label for="su-l">Comprimento (L) — m</label>
+                  <input type="number" id="su-l" step="0.1" min="0.8" value="2.4" placeholder="ex: 2.4" />
+                  <small class="hint">L ≥ B</small>
+                </div>
+              </div>
+            </div>
+            <div class="form-group" id="su-bloco-vala" style="display:none">
+              <label for="su-larg">Largura da vala (B) — m</label>
               <input type="number" id="su-larg" step="0.1" min="0.4" value="0.6" placeholder="ex: 0.6" />
               <small class="hint">NBR 13969: mínimo 0,40 m; recomendado 0,60 m</small>
             </div>
@@ -1688,6 +1820,8 @@
               <div class="formula-box">A = Q / i &nbsp;[m²] &nbsp;&nbsp;(Q em L/dia, i em L/m²·dia)</div>
               <p><strong>Poço absorvente (área lateral):</strong></p>
               <div class="formula-box">A_lat = π × D × H &nbsp;→&nbsp; H = A / (π × D) &nbsp;[m]</div>
+              <p><strong>Sumidouro prismático (paredes + fundo):</strong></p>
+              <div class="formula-box">A_útil = B×L + 2×(B+L)×H &nbsp;→&nbsp; H = (A − B×L) / (2×(B+L)) &nbsp;[m]</div>
               <p><strong>Vala de infiltração (área de fundo):</strong></p>
               <div class="formula-box">A_fundo = B × L &nbsp;→&nbsp; L = A / B &nbsp;[m]</div>
               <p><strong>Tabela 14 — Taxa de percolação → taxa de aplicação superficial:</strong></p>

@@ -132,6 +132,16 @@ function calcularPredial() {
   // ── Distância máx. desconector → ventilador (Tabela 7) ──
   const distVent = buscarDistDesconector(dnRamal);
 
+  // ── Coluna de ventilação (Tabela 6) ──
+  const compVent = parseFloat(document.getElementById('predial-comp-vent')?.value) || 0;
+  let colunaVent = null, msgColunaVent = '';
+  if (compVent > 0) {
+    colunaVent = selecionarColunaVentilacao(dnQueda, totalUHC, compVent);
+    msgColunaVent = colunaVent
+      ? `<tr><td>Coluna de ventilação — comprimento ${fmt(compVent, 1)} m</td><td>DN ${colunaVent.dn} mm (máx. ${colunaVent.compMax} m) <em>(Tab. 6 — NBR 8160)</em></td></tr>`
+      : `<tr><td>Coluna de ventilação — comprimento ${fmt(compVent, 1)} m</td><td>&#9888; Excede os limites da Tab. 6 — dividir a coluna ou consultar projetista</td></tr>`;
+  }
+
   // ── Montar linhas dos aparelhos ──
   const rowsAp = aparelhosPredial.map(a => `
     <tr>
@@ -176,6 +186,7 @@ function calcularPredial() {
       <tr><td>Coletor predial — i = ${fmt(decliv, 1)}%</td><td>DN ${dnColetor} mm <em>(Tab. 3 — NBR 8160)</em>${obsColetor}</td></tr>
       <tr><td>Ramal de ventilação${temVaso ? ' (com vaso)' : ' (sem vaso)'}</td><td>DN ${dnVent} mm <em>(Tab. 8 — NBR 8160)</em></td></tr>
       <tr><td>Dist. máx. desconector → ventilador</td><td>${fmt(distVent, 2)} m <em>(Tab. 7 — NBR 8160)</em></td></tr>
+      ${msgColunaVent}
     </table>
 
     ${temVaso ? '<p class="status-msg">&#9432; DN mínimo 100 mm para tubulações que recebem vasos sanitários (NBR 8160 §6.2).</p>' : ''}

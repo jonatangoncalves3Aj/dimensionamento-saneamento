@@ -85,6 +85,11 @@ document.addEventListener('DOMContentLoaded', function () {
     atualizarContribuicaoFossa();
   }
 
+  // Inicializar seletor de pesos relativos (água fria — NBR 5626)
+  if (typeof inicializarSeletorPesos === 'function') {
+    inicializarSeletorPesos();
+  }
+
   // Permitir submissão com Enter em campos de formulário
   document.querySelectorAll('input[type="number"]').forEach(function (input) {
     input.addEventListener('keydown', function (e) {
