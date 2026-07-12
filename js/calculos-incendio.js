@@ -106,6 +106,9 @@ function calcularBombaIncendio() {
   const tipo     = document.getElementById('bi-tipo').value;
   const Hg       = parseFloat(document.getElementById('bi-hg').value);
   const hf       = parseFloat(document.getElementById('bi-hf').value) || 0;
+  const eta_tot  = (parseFloat(document.getElementById('bi-eta')?.value) || 65) / 100;
+  const fs       = parseFloat(document.getElementById('bi-fs')?.value) || 1.25;
+  const Hm_bomba = parseFloat(document.getElementById('bi-hm-bomba')?.value);  // opcional (catálogo)
   const el       = document.getElementById('resultado-bomba-incendio');
 
   const p = PARAM_INCENDIO[tipo];
@@ -116,31 +119,47 @@ function calcularBombaIncendio() {
   const Q_m3s  = Q_Ls / 1000;
   const Q_m3h  = Q_m3s * 3600;
 
-  // Hm = Hg + hf + pressão mínima no bocal + perdas locais (15%)
+  // Hm requerida = Hg + hf + perdas locais (15%) + pressão mínima no bocal
   const hf_local = (Hg + hf) * 0.15;
   const Hm       = Hg + hf + hf_local + p.pressaoMin;
 
   // Potência
   const rho      = 1000;
   const g        = 9.81;
-  const eta_tot  = 0.65;   // rendimento típico de bomba de incêndio
   const P_calc   = (rho * g * Q_m3s * Hm) / eta_tot;  // W
   const P_kW     = P_calc / 1000;
   const P_CV     = P_kW / 0.7355;
-  const P_fs     = P_CV * 1.25;  // fator segurança 1,25
+  const P_fs     = P_CV * fs;
 
   const motores  = [0.5, 0.75, 1.0, 1.5, 2.0, 3.0, 4.0, 5.0, 7.5, 10.0, 15.0, 20.0, 25.0, 30.0];
   const motorAd  = motores.find(m => m >= P_fs) || motores[motores.length - 1];
 
-  // Pressão no hidrante mais desfavorável (verificação)
-  const P_hid = Hm - (Hg + hf + hf_local);
+  // Verificação da pressão no hidrante mais desfavorável com a bomba ESCOLHIDA
+  // (só é possível com a Hm real da bomba comercial, informada pelo usuário)
+  let verificacaoHTML = '';
+  let msgVerif = '&#9432; Informe a "Hm da bomba escolhida" (curva do fabricante na vazão de projeto) para verificar a pressão real no hidrante mais desfavorável.';
+  if (!isNaN(Hm_bomba) && Hm_bomba > 0) {
+    const P_bocal = Hm_bomba - Hg - hf - hf_local;
+    verificacaoHTML = `
+      <tr><td colspan="2"><strong>Verificação com a bomba escolhida</strong></td></tr>
+      <tr><td>Hm da bomba (catálogo)</td><td>${fmt(Hm_bomba, 2)} m.c.a</td></tr>
+      <tr><td>Pressão no bocal mais desfavorável</td><td><strong>${fmt(P_bocal, 2)} m.c.a</strong></td></tr>
+      <tr><td>Faixa admissível (NBR 13714)</td><td>${p.pressaoMin} – ${p.pressaoMax} m.c.a</td></tr>`;
+    if (P_bocal < p.pressaoMin) {
+      msgVerif = `&#10007; Pressão no bocal (${fmt(P_bocal, 2)} m.c.a) NÃO atende o mínimo de ${p.pressaoMin} m.c.a — selecione bomba com Hm maior.`;
+    } else if (P_bocal > p.pressaoMax) {
+      msgVerif = `&#9888; Pressão no bocal (${fmt(P_bocal, 2)} m.c.a) excede o máximo de ${p.pressaoMax} m.c.a — prever válvula reguladora ou orifício redutor nos pavimentos inferiores.`;
+    } else {
+      msgVerif = `&#10003; Pressão no bocal mais desfavorável (${fmt(P_bocal, 2)} m.c.a) dentro da faixa ${p.pressaoMin}–${p.pressaoMax} m.c.a (NBR 13714).`;
+    }
+  }
 
   el.className = 'resultado resultado-ok';
   el.innerHTML = `
     <h4>Resultados — Bomba de Incêndio</h4>
     <div class="result-main">
       <div><div class="label">Q bomba</div><div class="value">${fmt(Q_Ls, 2)} L/s</div></div>
-      <div><div class="label">Hm</div><div class="value">${fmt(Hm, 2)} m.c.a</div></div>
+      <div><div class="label">Hm requerida</div><div class="value">${fmt(Hm, 2)} m.c.a</div></div>
       <div><div class="label">Motor adotado</div><div class="value">${motorAd} CV</div></div>
     </div>
     <table class="result-table">
@@ -150,14 +169,14 @@ function calcularBombaIncendio() {
       <tr><td>Perdas na tubulação hf</td><td>${fmt(hf, 2)} m.c.a</td></tr>
       <tr><td>Perdas locais estimadas (~15%)</td><td>${fmt(hf_local, 2)} m.c.a</td></tr>
       <tr><td>Pressão mín. no bocal (NBR 13714)</td><td>${p.pressaoMin} m.c.a</td></tr>
-      <tr><td><strong>Altura manométrica total Hm</strong></td><td><strong>${fmt(Hm, 3)} m.c.a</strong></td></tr>
+      <tr><td><strong>Altura manométrica requerida Hm</strong></td><td><strong>${fmt(Hm, 3)} m.c.a</strong></td></tr>
       <tr><td>Potência calculada (η = ${(eta_tot*100).toFixed(0)}%)</td><td>${fmt(P_kW, 3)} kW = ${fmt(P_CV, 3)} CV</td></tr>
-      <tr><td>Potência com fs = 1,25</td><td>${fmt(P_fs, 3)} CV</td></tr>
+      <tr><td>Potência com fs = ${fmt(fs, 2)}</td><td>${fmt(P_fs, 3)} CV</td></tr>
       <tr><td><strong>Motor comercial adotado</strong></td><td><strong>${motorAd} CV = ${fmt(motorAd * 0.7355, 2)} kW</strong></td></tr>
-      <tr><td>Pressão no hidrante mais desfavorável</td><td>${fmt(P_hid, 2)} m.c.a</td></tr>
+      ${verificacaoHTML}
     </table>
-    <p class="status-msg">${P_hid >= p.pressaoMin ? '&#10003;' : '&#9888;'} Pressão no ponto mais desfavorável (${fmt(P_hid, 2)} m.c.a) ${P_hid >= p.pressaoMin ? 'atende' : 'NÃO atende'} o mínimo de ${p.pressaoMin} m.c.a (NBR 13714).</p>
-    <p class="status-msg">&#9432; NBR 13714 §7: prever bomba reserva (jockey) automática para pressurização e bomba principal (elétrica) + bomba de reserva (diesel para H > 3 pav.).</p>`;
+    <p class="status-msg">${msgVerif}</p>
+    <p class="status-msg">&#9432; NBR 13714 §7: prever bomba jockey automática para pressurização e bomba principal (elétrica) + reserva (diesel para edifícios altos).</p>`;
 }
 
 /* ============================================================
@@ -174,8 +193,8 @@ function calcularTubulacaoIncendio() {
     return;
   }
 
-  // Hazen-Williams com C=120 (ferro galvanizado / aço carbono — NBR 13714)
-  const C    = 120;
+  // Hazen-Williams — C conforme material (NBR 13714: aço/ferro galvanizado C=120)
+  const C    = parseFloat(document.getElementById('ti-c')?.value) || 120;
   const Qm3s = Q / 1000;
   const Dm   = DN / 1000;
   const J    = Math.pow(Qm3s / (0.2785 * C * Math.pow(Dm, 2.63)), 1 / 0.54);
@@ -199,7 +218,7 @@ function calcularTubulacaoIncendio() {
       <tr><td>Vazão Q</td><td>${fmt(Q, 3)} L/s</td></tr>
       <tr><td>DN adotado</td><td>DN ${DN} mm</td></tr>
       <tr><td>Comprimento L</td><td>${fmt(L, 1)} m</td></tr>
-      <tr><td>Coeficiente C (H-W, aço / ferro galv.)</td><td>${C}</td></tr>
+      <tr><td>Coeficiente C (Hazen-Williams)</td><td>${C}</td></tr>
       <tr><td>Velocidade de escoamento</td><td>${fmt(V, 3)} m/s</td></tr>
       <tr><td>Gradiente hidráulico J</td><td>${fmt(J * 1000, 3)} m/km</td></tr>
       <tr><td>Perda de carga distribuída hf</td><td>${fmt(hf, 4)} m.c.a</td></tr>
