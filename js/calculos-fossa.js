@@ -30,6 +30,7 @@ function calcularFossaSeptica() {
   const faixaTemp = document.getElementById('fs-temp').value;   // 'frio'|'medio'|'quente'
   const formato = document.getElementById('fs-formato').value;  // 'retangular'|'circular'
   const H       = parseFloat(document.getElementById('fs-h').value);
+  const razao   = Math.min(4, Math.max(2, parseFloat(document.getElementById('fs-razao')?.value) || 2));
   const el      = document.getElementById('resultado-fossa');
 
   if (!N || !q || !Lf || !H || N <= 0 || q <= 0 || Lf <= 0 || H < 1) {
@@ -37,9 +38,9 @@ function calcularFossaSeptica() {
     return;
   }
 
-  // T — Tempo de detenção pela Tabela 13 (vazão × temperatura)
+  // T — Tempo de detenção pela contribuição diária (Tabela — NBR 7229)
   const qDia = N * q;   // L/dia
-  const T = buscarDetencaoTemp(qDia, faixaTemp);
+  const T = buscarDetencao(qDia);
 
   // K — Taxa de acumulação de lodo pela Tabela 11 (anos × temperatura)
   const K = buscarAcumuloLodo(anos, faixaTemp);
@@ -72,15 +73,15 @@ function calcularFossaSeptica() {
       <tr><td>Altura útil (H)</td><td>${fmt(H, 2)} m</td></tr>
       <tr><td>Borda livre</td><td>0,30 m</td></tr>
       <tr><td>Altura total</td><td>${fmt(H + 0.30, 2)} m</td></tr>`;
-    el.innerHTML += '';  // será substituído abaixo
   } else {
-    // Seção retangular: L = 2B, V = L × B × H = 2B² × H  →  B = √(V / (2H))
-    const B = Math.sqrt(V_m3 / (2 * H));
-    const L = 2 * B;
+    // Seção retangular: L = razão×B, V = L × B × H = razão×B² × H  →  B = √(V / (razão×H))
+    // NBR 7229: relação comprimento/largura entre 2:1 e 4:1
+    const B = Math.sqrt(V_m3 / (razao * H));
+    const L = razao * B;
     dimHTML = `
       <tr><td>Formato</td><td>Prismático retangular</td></tr>
       <tr><td>Comprimento (L)</td><td>${fmt(L, 2)} m</td></tr>
-      <tr><td>Largura (B)</td><td>${fmt(B, 2)} m  (proporção L/B = 2:1)</td></tr>
+      <tr><td>Largura (B)</td><td>${fmt(B, 2)} m  (proporção L/B = ${fmt(razao, 1)}:1)</td></tr>
       <tr><td>Altura útil (H)</td><td>${fmt(H, 2)} m</td></tr>
       <tr><td>Borda livre</td><td>0,30 m</td></tr>
       <tr><td>Altura total</td><td>${fmt(H + 0.30, 2)} m</td></tr>`;
@@ -107,8 +108,8 @@ function calcularFossaSeptica() {
       <tr><td>Contribuição per capita (q)</td><td>${fmt(q)} L/un·dia <em>(Tab. 9 — NBR 7229)</em></td></tr>
       <tr><td>Contribuição de lodo fresco (Lf)</td><td>${fmt(Lf, 2)} L/un·dia <em>(Tab. 9 — NBR 7229)</em></td></tr>
       <tr><td>Contribuição diária total (N×q)</td><td>${fmt(qDia)} L/dia</td></tr>
-      <tr><td>Temperatura do mês mais frio</td><td>${faixaLabel[faixaTemp]}</td></tr>
-      <tr><td>Tempo de detenção (T)</td><td>${fmt(T, 2)} dias <em>(Tab. 13 — NBR 7229)</em></td></tr>
+      <tr><td>Temperatura do mês mais frio</td><td>${faixaLabel[faixaTemp]} — usada na taxa de lodo K</td></tr>
+      <tr><td>Tempo de detenção (T)</td><td>${fmt(T, 2)} dias <em>(por contribuição diária — NBR 7229)</em></td></tr>
       <tr><td>Intervalo entre limpezas</td><td>${anos} ano(s)</td></tr>
       <tr><td>Taxa de acumulação de lodo (K)</td><td>${K} dias <em>(Tab. 11 — NBR 7229)</em></td></tr>
       <tr><td>Volume calculado</td><td>${fmt(V_calc / 1000, 3)} m³  (${fmt(V_calc)} L)</td></tr>
@@ -130,6 +131,7 @@ function calcularFiltroAnaerobio() {
   const Tf    = parseFloat(document.getElementById('fa-tf').value);
   const h_mat = parseFloat(document.getElementById('fa-hmat').value);
   const forma = document.getElementById('fa-forma').value;
+  const razao = Math.min(4, Math.max(1, parseFloat(document.getElementById('fa-razao')?.value) || 2));
   const el    = document.getElementById('resultado-filtro');
 
   if (!Q || !Tf || !h_mat || Q <= 0 || Tf < 6 || h_mat < 0.8) {
@@ -137,31 +139,35 @@ function calcularFiltroAnaerobio() {
     return;
   }
 
-  const V_m3   = (Q / 1000) * (Tf / 24);
-  const V_min  = 0.5;
+  // NBR 13969 / NBR 7229 Anexo B: V_útil = 1,60 × Q × Tf/24
+  // (o fator 1,6 compensa o volume ocupado pelo meio filtrante)
+  const V_m3   = 1.60 * (Q / 1000) * (Tf / 24);
+  const V_min  = 1.0;                            // m³ — volume útil mínimo (NBR 13969)
   const V_adot = Math.max(V_m3, V_min);
   const Area   = V_adot / h_mat;
 
-  const h_entrada = 0.30;
+  const h_fundo   = 0.30;   // fundo falso (calha de distribuição)
   const h_borda   = 0.30;
-  const H_total   = h_entrada + h_mat + h_borda;
+  const H_total   = h_fundo + h_mat + h_borda;
 
   let dimHTML = '';
   if (forma === 'circular') {
     const D = Math.sqrt(4 * Area / Math.PI);
     dimHTML = `
-      <tr><td>Formato</td><td>Circular</td></tr>
+      <tr><td>Formato</td><td>Cilíndrico (circular)</td></tr>
       <tr><td>Diâmetro (D)</td><td>${fmt(D, 2)} m</td></tr>
       <tr><td>Área transversal</td><td>${fmt(Area, 3)} m²</td></tr>`;
   } else {
-    const B = Math.sqrt(Area / 2);
-    const L = 2 * B;
+    const B = Math.sqrt(Area / razao);
+    const L = razao * B;
     dimHTML = `
-      <tr><td>Formato</td><td>Retangular (L = 2B)</td></tr>
+      <tr><td>Formato</td><td>Prismático retangular (L = ${fmt(razao, 1)}B)</td></tr>
       <tr><td>Comprimento (L)</td><td>${fmt(L, 2)} m</td></tr>
-      <tr><td>Largura (B)</td><td>${fmt(B, 2)} m  (proporção L/B = 2:1)</td></tr>
+      <tr><td>Largura (B)</td><td>${fmt(B, 2)} m  (proporção L/B = ${fmt(razao, 1)}:1)</td></tr>
       <tr><td>Área transversal</td><td>${fmt(Area, 3)} m²</td></tr>`;
   }
+
+  const usouMin = V_m3 < V_min;
 
   el.className = 'resultado resultado-ok';
   el.innerHTML = `
@@ -171,19 +177,21 @@ function calcularFiltroAnaerobio() {
       <div><div class="label">Altura total</div><div class="value">${fmt(H_total, 2)} m</div></div>
     </div>
     <table class="result-table">
-      <tr><td>Fórmula</td><td>V = Q × Tf / 24  [m³]</td></tr>
+      <tr><td>Fórmula (NBR 13969 §5.2)</td><td>V_útil = 1,60 × Q × Tf / 24  [m³]</td></tr>
       <tr><td>Vazão diária Q</td><td>${fmt(Q)} L/dia</td></tr>
       <tr><td>Tempo de detenção Tf</td><td>${Tf} h</td></tr>
-      <tr><td>Volume calculado</td><td>${fmt(V_m3, 4)} m³</td></tr>
+      <tr><td>Volume calculado (com fator 1,6)</td><td>${fmt(V_m3, 4)} m³</td></tr>
+      <tr><td>Volume útil mínimo (NBR 13969)</td><td>${fmt(V_min, 1)} m³</td></tr>
       <tr><td><strong>Volume adotado</strong></td><td><strong>${fmt(V_adot, 3)} m³</strong></td></tr>
       ${dimHTML}
-      <tr><td>Câmara de entrada</td><td>${fmt(h_entrada, 2)} m</td></tr>
-      <tr><td>Material filtrante</td><td>${fmt(h_mat, 2)} m</td></tr>
+      <tr><td>Fundo falso (calha de distribuição)</td><td>${fmt(h_fundo, 2)} m</td></tr>
+      <tr><td>Leito filtrante (h)</td><td>${fmt(h_mat, 2)} m — usual 1,20 m</td></tr>
       <tr><td>Borda livre</td><td>${fmt(h_borda, 2)} m</td></tr>
       <tr><td><strong>Altura total</strong></td><td><strong>${fmt(H_total, 2)} m</strong></td></tr>
     </table>
-    <p class="status-msg">&#10003; Material filtrante: pedra britada nº 4 ou nº 5 (NBR 7229 §8.2).</p>
-    <p class="status-msg">&#9432; Fluxo ascendente — entrada pela parte inferior, saída pela superior.</p>`;
+    ${usouMin ? `<p class="status-msg">&#9888; Volume calculado (${fmt(V_m3, 3)} m³) inferior ao mínimo — adotado ${fmt(V_min, 1)} m³ (NBR 13969).</p>` : ''}
+    <p class="status-msg">&#10003; Material filtrante: pedra britada nº 4 ou nº 5 (NBR 7229 §8.2 / NBR 13969).</p>
+    <p class="status-msg">&#9432; Fluxo ascendente — entrada pelo fundo falso, saída pela parte superior.</p>`;
 }
 
 /* ============================================================
@@ -196,6 +204,16 @@ function atualizarModoSumidouro() {
   const blocoPerc  = document.getElementById('su-bloco-perc');
   if (blocoSolo) blocoSolo.style.display = modo === 'solo' ? '' : 'none';
   if (blocoPerc) blocoPerc.style.display = modo === 'perc' ? '' : 'none';
+}
+
+function atualizarTipoSumidouro() {
+  const tipo = document.getElementById('su-tipo').value;
+  const blocoPoco   = document.getElementById('su-bloco-poco');
+  const blocoPrisma = document.getElementById('su-bloco-prisma');
+  const blocoVala   = document.getElementById('su-bloco-vala');
+  if (blocoPoco)   blocoPoco.style.display   = tipo === 'poco'       ? '' : 'none';
+  if (blocoPrisma) blocoPrisma.style.display = tipo === 'prismatico' ? '' : 'none';
+  if (blocoVala)   blocoVala.style.display   = tipo === 'vala'       ? '' : 'none';
 }
 
 function atualizarTaxaInfiltracao() {
@@ -278,7 +296,56 @@ function calcularSumidouro() {
         ${detalhes}
       </table>
       <p class="status-msg">${alertas}</p>
-      <p class="status-msg">&#9432; Distâncias mínimas: 3 m de edificações, 15 m de poços d'água, 1,5 m do lençol freático (NBR 13969).</p>`;
+      <p class="status-msg">&#9432; Área útil = superfície lateral abaixo da entrada (critério conservador — o fundo tende a colmatar). Distâncias mínimas: 3 m de edificações, 15 m de poços d'água, 1,5 m do lençol freático (NBR 13969).</p>`;
+
+  } else if (tipo === 'prismatico') {
+    const B = parseFloat(document.getElementById('su-b').value);
+    const L = parseFloat(document.getElementById('su-l').value);
+    if (!B || B < 0.8) { mostrarErro(el, 'Largura mínima do sumidouro prismático = 0,80 m.'); return; }
+    if (!L || L < B)   { mostrarErro(el, 'Informe o comprimento L (≥ largura B).'); return; }
+
+    // Área útil de infiltração = paredes laterais + fundo (NBR 13969):
+    // A_nec = B×L + 2×(B+L)×H  →  H = (A_nec − B×L) / (2×(B+L))
+    const A_fundo  = B * L;
+    let H_nec, avisoFolga = '';
+    if (A_nec <= A_fundo) {
+      H_nec = 0.5;   // profundidade útil mínima construtiva
+      avisoFolga = `&#9432; O fundo (${fmt(A_fundo, 2)} m²) já supera a área necessária (${fmt(A_nec, 2)} m²) — adotada profundidade útil mínima de 0,50 m (folga de segurança).`;
+    } else {
+      H_nec = (A_nec - A_fundo) / (2 * (B + L));
+    }
+    const H_adot    = Math.max(0.5, Math.ceil(H_nec * 10) / 10);
+    const A_paredes = 2 * (B + L) * H_adot;
+    const A_total   = A_fundo + A_paredes;
+
+    alertas = H_adot > 3.0
+      ? `&#9888; Profundidade útil (${fmt(H_adot, 2)} m) excede 3,0 m (NBR 13969) — aumente B×L ou use múltiplas unidades.`
+      : `&#10003; Profundidade útil dentro do limite de 3,0 m (NBR 13969).`;
+
+    el.innerHTML = `
+      <h4>Resultados — Sumidouro Prismático (Retangular)</h4>
+      <div class="result-main">
+        <div><div class="label">B × L</div><div class="value">${fmt(B, 2)} × ${fmt(L, 2)} m</div></div>
+        <div><div class="label">Profundidade útil</div><div class="value">${fmt(H_adot, 2)} m</div></div>
+      </div>
+      <table class="result-table">
+        <tr><td>Vazão diária (Q)</td><td>${fmt(Q)} L/dia</td></tr>
+        <tr><td>Taxa de infiltração (i)</td><td>${fmt(i, 1)} L/m²·dia</td></tr>
+        <tr><td>Origem da taxa</td><td>${origemI}</td></tr>
+        <tr><td>Tipo</td><td>Prismático retangular (paredes + fundo)</td></tr>
+        <tr><td>Área de infiltração necessária (A = Q/i)</td><td>${fmt(A_nec, 2)} m²</td></tr>
+        <tr><td>Fórmula</td><td>H = (A − B×L) / (2×(B+L))</td></tr>
+        <tr><td>Largura adotada (B)</td><td>${fmt(B, 2)} m</td></tr>
+        <tr><td>Comprimento adotado (L)</td><td>${fmt(L, 2)} m</td></tr>
+        <tr><td><strong>Profundidade útil (H)</strong></td><td><strong>${fmt(H_adot, 2)} m</strong> (abaixo da geratriz de entrada)</td></tr>
+        <tr><td>Área do fundo</td><td>${fmt(A_fundo, 2)} m²</td></tr>
+        <tr><td>Área das paredes (2×(B+L)×H)</td><td>${fmt(A_paredes, 2)} m²</td></tr>
+        <tr><td>Área útil total disponível</td><td>${fmt(A_total, 2)} m² ≥ ${fmt(A_nec, 2)} m² necessários</td></tr>
+        <tr><td>Profundidade máxima NBR 13969</td><td>3,0 m</td></tr>
+      </table>
+      <p class="status-msg">${alertas}</p>
+      ${avisoFolga ? `<p class="status-msg">${avisoFolga}</p>` : ''}
+      <p class="status-msg">&#9432; Paredes em alvenaria de tijolos assentados em crivo (juntas abertas) ou anéis perfurados; enchimento lateral com brita. Distâncias mínimas: 3 m de edificações, 15 m de poços d'água, 1,5 m do lençol freático (NBR 13969).</p>`;
 
   } else {
     const B = parseFloat(document.getElementById('su-larg').value);
