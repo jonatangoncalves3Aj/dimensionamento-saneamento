@@ -14,9 +14,20 @@
   <header class="topbar">
     <h1 class="titulo">Levantamento <span>de Obra</span></h1>
 
+    <div class="proj-ctrl">
+      <select id="sel-projeto" title="Projeto"></select>
+      <button id="btn-proj-novo" title="Novo projeto">+</button>
+      <button id="btn-proj-renomear" title="Renomear projeto">&#9998;</button>
+      <button id="btn-proj-excluir" title="Excluir projeto">&#128465;</button>
+      <button id="btn-proj-exportar" title="Exportar projeto (.json)">&#11015;</button>
+      <button id="btn-proj-importar" title="Importar projeto (.json)">&#11014;</button>
+    </div>
+
     <div class="seg-toggle" role="tablist">
       <button id="btn-view-planta" class="seg ativo" role="tab">Planta</button>
       <button id="btn-view-tabela" class="seg" role="tab">Tabela</button>
+      <button id="btn-view-orcamento" class="seg" role="tab">Or&ccedil;amento</button>
+      <button id="btn-view-avanco" class="seg" role="tab">Avan&ccedil;o</button>
     </div>
 
     <div class="zoom-ctrl" id="zoom-ctrl">
@@ -113,6 +124,29 @@
     <div class="tabela-scroll" id="tabela-scroll"></div>
   </main>
 
+  <!-- Vista Orçamento -->
+  <main class="principal-tabela" id="vista-orcamento" hidden>
+    <div class="tabela-acoes">
+      <button id="btn-orc-add" class="btn-ghost">+ Servi&ccedil;o</button>
+      <label class="campo-inline">BDI (%) <input id="inp-bdi" inputmode="decimal" /></label>
+      <button id="btn-orc-csv" class="btn-ghost">Exportar CSV</button>
+      <button id="btn-orc-imprimir" class="btn-ghost">Imprimir</button>
+      <p class="dica dica-tabela">Quantidades v&ecirc;m do levantamento (fonte de cada servi&ccedil;o). Pre&ccedil;os s&atilde;o de refer&ecirc;ncia — edite com os seus.</p>
+    </div>
+    <div class="tabela-scroll" id="orc-scroll"></div>
+  </main>
+
+  <!-- Vista Avanço -->
+  <main class="principal-tabela" id="vista-avanco" hidden>
+    <div class="tabela-acoes">
+      <label class="campo-inline">In&iacute;cio <input type="date" id="inp-data-inicio" /></label>
+      <label class="campo-inline">T&eacute;rmino <input type="date" id="inp-data-fim" /></label>
+      <span class="avanco-global" id="avanco-global"></span>
+      <p class="dica dica-tabela">Marque o % de cada ambiente (na planta ou aqui). O avan&ccedil;o global &eacute; ponderado pela &aacute;rea.</p>
+    </div>
+    <div class="tabela-scroll" id="avanco-scroll"></div>
+  </main>
+
   <!-- Diálogo: classificar pranchas importadas -->
   <dialog id="dlg-importar">
     <h3>Pranchas</h3>
@@ -153,6 +187,7 @@
   </dialog>
 
   <input type="file" id="inp-arquivos" accept="application/pdf" multiple hidden />
+  <input type="file" id="inp-json" accept="application/json,.json" hidden />
 
   <script type="module" src="js/app.js"></script>
 </body>

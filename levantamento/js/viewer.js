@@ -186,6 +186,15 @@ export function desenharOverlay() {
           'font-weight': i === 0 ? '700' : '400',
         }, t));
       });
+      // Faixa de avanço físico na base do pin (verde = concluído)
+      const avanco = num(a.avanco) ?? 0;
+      if (avanco > 0) {
+        g.appendChild(el('rect', {
+          x: a.pin.x - largTexto / 2, y: a.pin.y + altTexto / 2 - 2.6 / state.zoom,
+          width: largTexto * Math.min(avanco, 100) / 100, height: 2.6 / state.zoom,
+          fill: avanco >= 100 ? '#22c55e' : '#d97706',
+        }));
+      }
       overlay.appendChild(g);
     }
   }

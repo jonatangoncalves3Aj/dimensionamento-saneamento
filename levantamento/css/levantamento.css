@@ -187,6 +187,67 @@ tr.total td { font-weight: 700; color: #fff; background: var(--fundo-3); font-si
 tr.grupo td { text-align: left; color: var(--texto-2); font-size: .72rem; text-transform: uppercase; letter-spacing: .05em; background: var(--fundo-2); }
 h3.tabela-sub { font-size: .8rem; color: var(--texto-2); margin: 22px 0 6px; text-transform: uppercase; letter-spacing: .05em; }
 
+/* ---------- Projetos (topbar) ---------- */
+.proj-ctrl { display: flex; align-items: center; gap: 4px; }
+.proj-ctrl select {
+  width: auto; max-width: 180px; background: var(--fundo-3); color: var(--texto);
+  border: 1px solid var(--borda); border-radius: 6px; padding: 5px 8px; font-size: .82rem;
+}
+.proj-ctrl button {
+  background: var(--fundo-3); color: var(--texto-2); border: 1px solid var(--borda);
+  border-radius: 6px; min-width: 28px; height: 28px; cursor: pointer; font-size: .8rem;
+}
+.proj-ctrl button:hover { color: var(--texto); border-color: var(--texto-2); }
+
+.campo-inline { display: flex; align-items: center; gap: 6px; font-size: .8rem; color: var(--texto-2); }
+.campo-inline input {
+  width: 84px; background: var(--fundo-3); color: var(--texto);
+  border: 1px solid var(--borda); border-radius: 6px; padding: 5px 8px; font-size: .82rem;
+}
+.campo-inline input[type="date"] { width: 140px; color-scheme: dark; }
+
+/* ---------- Orçamento ---------- */
+.abc { font-weight: 700; text-align: center !important; }
+.abc-A { color: #f87171; }
+.abc-B { color: #fbbf24; }
+.abc-C { color: #4ade80; }
+.btn-excluir { border: 0; background: none; color: var(--texto-2); cursor: pointer; font-size: .95rem; }
+.btn-excluir:hover { color: var(--alerta); }
+#vista-orcamento table.quant td select {
+  width: auto; background: var(--fundo-3); color: var(--texto);
+  border: 1px solid var(--borda); border-radius: 5px; padding: 3px 6px; font-size: .78rem;
+}
+
+/* ---------- Avanço ---------- */
+.avanco-global { font-weight: 700; color: var(--laranja-2); font-size: .9rem; }
+.avanco-linha {
+  display: flex; align-items: center; gap: 12px; padding: 5px 2px;
+  border-bottom: 1px solid var(--borda); font-size: .84rem;
+}
+.avanco-nome { flex: 0 0 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.avanco-linha input[type="range"] { flex: 0 0 160px; accent-color: var(--laranja); }
+.avanco-pct { min-width: 44px; text-align: right; }
+.barra-avanco {
+  height: 8px; background: var(--fundo-3); border-radius: 100px; overflow: hidden;
+  border: 1px solid var(--borda);
+}
+.barra-avanco div { height: 100%; background: #d97706; border-radius: 100px; }
+.barra-avanco div.cheia { background: #22c55e; }
+
+.card-avanco { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+.card-avanco label { font-size: .68rem; color: var(--texto-2); }
+.card-avanco input[type="range"] { flex: 1; width: auto; padding: 0; accent-color: var(--laranja); }
+.card-avanco strong { font-size: .78rem; min-width: 38px; text-align: right; }
+
+.curva-s { margin-top: 8px; max-width: 780px; }
+.curva-s-svg { background: var(--fundo-2); border: 1px solid var(--borda); border-radius: 10px; padding: 10px; }
+.curva-s svg { width: 100%; height: auto; display: block; }
+.curva-s .grade { stroke: var(--borda); stroke-width: 1; }
+.curva-s .eixo { fill: var(--texto-2); font-size: 11px; }
+.curva-s .rotulo-serie { font-size: 12px; font-weight: 700; fill: var(--texto); }
+.legenda { display: flex; gap: 18px; font-size: .78rem; color: var(--texto-2); margin: 8px 2px; }
+.legenda i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+
 /* ---------- Diálogos ---------- */
 dialog {
   background: var(--fundo-2); color: var(--texto); border: 1px solid var(--borda);
@@ -214,6 +275,9 @@ dialog h3 { margin: 0 0 6px; font-size: 1rem; }
 @media print {
   body { background: #fff; color: #000; overflow: visible; }
   .topbar, .abas, .tabela-acoes, .sidebar { display: none !important; }
+  .curva-s-svg { background: #fff; border-color: #999; }
+  .avanco-linha { border-color: #999; color: #000; }
+  .avanco-linha input[type="range"] { display: none; }
   .principal-tabela, .tabela-scroll { overflow: visible; }
   table.quant { min-width: 0; font-size: 10pt; }
   table.quant th { background: #fff; color: #000; position: static; }

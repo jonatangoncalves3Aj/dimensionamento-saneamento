@@ -4,7 +4,11 @@ import {
   state, uid, novoProjeto, novaPrancha, novoAmbiente,
   pranchaAtual, ambienteSel, salvar, carregarProjeto,
   salvarPdf, limparPdfsOrfaos, iniciarHistorico, desfazer, refazer,
+  listarProjetos, lerProjeto, excluirProjeto, idsPranchasTodosProjetos,
+  exportarProjetoJSON, importarProjetoJSON,
 } from './store.js';
+import { renderOrcamento, adicionarServico, exportarOrcamentoCSV } from './orcamento.js';
+import { renderAvanco, registrarSnapshot } from './avanco.js';
 import {
   renderizar, ajustar, pontoDoEvento, desenharOverlay,
   obterPagina, esquecerPagina, contarPaginas,
@@ -19,18 +23,91 @@ const overlay = $('overlay');
 /* =============== Inicialização =============== */
 
 state.projeto = carregarProjeto() || novoProjeto();
+salvar();
 if (state.projeto.pranchas.length) state.pranchaAtualId = state.projeto.pranchas[0].id;
 iniciarHistorico();
-limparPdfsOrfaos(state.projeto.pranchas.map(p => p.id)).catch(() => {});
+limparPdfsOrfaos(idsPranchasTodosProjetos()).catch(() => {});
 
 atualizarTudo();
 
 function atualizarTudo() {
+  renderProjetos();
   renderAbas();
   renderSidebar();
   renderizar().catch(err => console.error(err));
   if (state.view === 'tabela') renderTabela();
+  if (state.view === 'orcamento') renderOrcamento();
+  if (state.view === 'avanco') renderAvanco();
 }
+
+/* =============== Projetos (multi-projeto + JSON) =============== */
+
+function renderProjetos() {
+  const sel = $('sel-projeto');
+  sel.innerHTML = '';
+  for (const { id, nome } of listarProjetos()) {
+    sel.appendChild(new Option(nome, id, false, id === state.projeto.id));
+  }
+}
+
+function trocarProjeto(proj) {
+  state.projeto = proj;
+  state.pranchaAtualId = proj.pranchas[0]?.id || null;
+  state.ambienteSelId = null;
+  setTool(null);
+  salvar();
+  iniciarHistorico();
+  atualizarTudo();
+}
+
+$('sel-projeto').addEventListener('change', () => {
+  const proj = lerProjeto($('sel-projeto').value);
+  if (proj) trocarProjeto(proj);
+});
+
+$('btn-proj-novo').addEventListener('click', () => {
+  const nome = prompt('Nome do novo projeto:', 'Nova obra');
+  if (!nome) return;
+  trocarProjeto(novoProjeto(nome));
+});
+
+$('btn-proj-renomear').addEventListener('click', () => {
+  const nome = prompt('Novo nome do projeto:', state.projeto.nome);
+  if (!nome) return;
+  state.projeto.nome = nome;
+  salvar(); renderProjetos();
+});
+
+$('btn-proj-excluir').addEventListener('click', () => {
+  if (!confirm(`Excluir o projeto "${state.projeto.nome}" e todas as suas pranchas?`)) return;
+  excluirProjeto(state.projeto.id);
+  limparPdfsOrfaos(idsPranchasTodosProjetos()).catch(() => {});
+  const resto = listarProjetos();
+  trocarProjeto(resto.length ? lerProjeto(resto[0].id) : novoProjeto());
+});
+
+$('btn-proj-exportar').addEventListener('click', async () => {
+  const json = await exportarProjetoJSON(state.projeto);
+  const blob = new Blob([json], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `${state.projeto.nome.toLowerCase().replace(/\s+/g, '-')}.levantamento.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+
+$('btn-proj-importar').addEventListener('click', () => $('inp-json').click());
+$('inp-json').addEventListener('change', async (e) => {
+  const arq = e.target.files[0];
+  e.target.value = '';
+  if (!arq) return;
+  try {
+    const proj = await importarProjetoJSON(await arq.text());
+    trocarProjeto(proj);
+  } catch (err) {
+    alert('Falha ao importar: ' + err.message);
+  }
+});
 
 /* =============== Abas de pranchas =============== */
 
@@ -552,6 +629,26 @@ function cardAmbiente(p, a) {
   grade.appendChild(campoNum('PD acab. (m)', a.pdAcab, v => { a.pdAcab = v; }));
   card.appendChild(grade);
 
+  // Avanço físico
+  const av = document.createElement('div');
+  av.className = 'card-avanco';
+  const avLab = document.createElement('label');
+  avLab.textContent = 'Avanço';
+  const avSlider = document.createElement('input');
+  avSlider.type = 'range';
+  avSlider.min = 0; avSlider.max = 100; avSlider.step = 5;
+  avSlider.value = num(a.avanco) ?? 0;
+  const avPct = document.createElement('strong');
+  avPct.textContent = `${fmt(num(a.avanco) ?? 0, 0)}%`;
+  avSlider.addEventListener('input', () => { avPct.textContent = `${avSlider.value}%`; });
+  avSlider.addEventListener('change', () => {
+    a.avanco = +avSlider.value;
+    registrarSnapshot(state.projeto);
+    salvar(); desenharOverlay();
+  });
+  av.appendChild(avLab); av.appendChild(avSlider); av.appendChild(avPct);
+  card.appendChild(av);
+
   // Vãos
   const vaos = document.createElement('div');
   vaos.className = 'card-vaos';
@@ -601,17 +698,21 @@ function cardAmbiente(p, a) {
 
 /* =============== Topbar: vistas, zoom, nomes =============== */
 
-$('btn-view-planta').addEventListener('click', () => trocarVista('planta'));
-$('btn-view-tabela').addEventListener('click', () => trocarVista('tabela'));
+const VISTAS = ['planta', 'tabela', 'orcamento', 'avanco'];
+for (const v of VISTAS) {
+  $(`btn-view-${v}`).addEventListener('click', () => trocarVista(v));
+}
 
 function trocarVista(v) {
   state.view = v;
-  $('btn-view-planta').classList.toggle('ativo', v === 'planta');
-  $('btn-view-tabela').classList.toggle('ativo', v === 'tabela');
-  $('vista-planta').hidden = v !== 'planta';
-  $('vista-tabela').hidden = v !== 'tabela';
+  for (const x of VISTAS) {
+    $(`btn-view-${x}`).classList.toggle('ativo', x === v);
+    $(`vista-${x}`).hidden = x !== v;
+  }
   $('zoom-ctrl').style.visibility = v === 'planta' ? '' : 'hidden';
   if (v === 'tabela') renderTabela();
+  else if (v === 'orcamento') renderOrcamento();
+  else if (v === 'avanco') renderAvanco();
   else renderizar();
 }
 
@@ -639,6 +740,24 @@ $('btn-nomes').addEventListener('click', () => {
 
 $('btn-csv').addEventListener('click', exportarCSV);
 $('btn-imprimir').addEventListener('click', () => window.print());
+
+/* =============== Orçamento e Avanço: controles =============== */
+
+$('btn-orc-add').addEventListener('click', adicionarServico);
+$('btn-orc-csv').addEventListener('click', exportarOrcamentoCSV);
+$('btn-orc-imprimir').addEventListener('click', () => window.print());
+$('inp-bdi').addEventListener('change', () => {
+  state.projeto.bdi = num($('inp-bdi').value) ?? 0;
+  salvar(); renderOrcamento();
+});
+$('inp-data-inicio').addEventListener('change', () => {
+  state.projeto.dataInicio = $('inp-data-inicio').value || null;
+  salvar(); renderAvanco();
+});
+$('inp-data-fim').addEventListener('change', () => {
+  state.projeto.dataFim = $('inp-data-fim').value || null;
+  salvar(); renderAvanco();
+});
 
 /* Primeira renderização com ajuste de zoom quando já há prancha */
 if (state.pranchaAtualId) {

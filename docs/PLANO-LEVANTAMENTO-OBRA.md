@@ -224,3 +224,29 @@ Ambiente {
 | 0:45 | Cards LAVANDERIA (24,75 m²) e DORMITÓRIO DE APOIO (12,80 m²) com regra de vãos |
 | 0:48–0:52 | Desconto automático de vãos; subtotal Subsolo 540,50 m² |
 | 0:55–1:18 | Encerramento: "não gastei dias", "praticamente pronto", CTA de seguir o perfil |
+
+---
+
+## 8. Extensões para coordenação e planejamento (implementadas)
+
+Sequência aprovada pelo usuário e implementada sobre o app base:
+
+1. **Multi-projeto + portabilidade** — seletor de projetos na topbar (criar,
+   renomear, excluir), exportar/importar `.levantamento.json` com os PDFs
+   embutidos em base64; migração automática dos dados da versão
+   mono-projeto.
+2. **Orçamento** — catálogo de serviços editável (semeado com serviços de
+   referência), quantidade de cada serviço derivada do levantamento
+   (parede líquida, área de piso/teto, perímetro ou manual), preço
+   unitário, curva ABC (A ≤ 80% acumulado, B ≤ 95%, C acima), BDI e total,
+   com exportação CSV e impressão.
+3. **Avanço físico** — % executado por ambiente (slider no card, na vista
+   Avanço e faixa colorida no pin da planta), avanço global e por
+   pavimento ponderado pela área, registro automático de um snapshot por
+   dia e **curva S** (real × planejada `3t²−2t³` entre as datas de início
+   e término). Cores das séries validadas para daltonismo e contraste
+   sobre o fundo escuro (#ea580c real, #3b82f6 planejado).
+
+Próximas extensões sugeridas (não implementadas): RDO com fotos, pins de
+pendência/compatibilização entre disciplinas, integração com horas de OP/
+ponto (planejado × executado) e colaboração multiusuário via backend.
