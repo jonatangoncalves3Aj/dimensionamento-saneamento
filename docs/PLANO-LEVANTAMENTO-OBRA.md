@@ -165,31 +165,31 @@ Ambiente {
 ## 5. Roadmap de implementação
 
 ### Fase 1 — MVP de medição (sem IA) — ~1 semana
-- [ ] Shell da tela principal (topbar, abas, sidebar, viewport).
-- [ ] Importação de PDFs com pdf.js + diálogo pavimento/disciplina.
-- [ ] Calibração de escala por cota conhecida (linha de 2 cliques + diálogo).
-- [ ] Ferramentas: Linear, Perímetro (polígono), Lado retâng., Contagem.
-- [ ] Cards de ambientes criados manualmente; pins arrastáveis.
-- [ ] Persistência em IndexedDB; zoom/pan e "Ajustar".
+- [x] Shell da tela principal (topbar, abas, sidebar, viewport).
+- [x] Importação de PDFs com pdf.js + diálogo pavimento/disciplina.
+- [x] Calibração de escala por cota conhecida (linha de 2 cliques + diálogo).
+- [x] Ferramentas: Linear, Perímetro (polígono), Lado retâng., Contagem.
+- [x] Cards de ambientes criados manualmente; pins arrastáveis.
+- [x] Persistência em IndexedDB; zoom/pan e "Ajustar".
 
 ### Fase 2 — Tabela e cálculos — ~3-4 dias
-- [ ] Visão Tabela com todas as colunas, edição inline.
-- [ ] Cálculo de parede bruta/líquida com regra de vãos.
-- [ ] Subtotais por pavimento e total geral.
-- [ ] Exportar CSV/XLSX e impressão.
+- [x] Visão Tabela com todas as colunas, edição inline.
+- [x] Cálculo de parede bruta/líquida com regra de vãos.
+- [x] Subtotais por pavimento e total geral.
+- [x] Exportar CSV/XLSX e impressão.
 
 ### Fase 3 — "Analisar planta" (automático) — ~1 semana
-- [ ] Extração da camada de texto do PDF (pdf.js `getTextContent()` traz
+- [x] Extração da camada de texto do PDF (pdf.js `getTextContent()` traz
       string + posição): heurística que agrupa `NOME` + `xx,xx m²` +
       `PD x,xx` próximos → cria ambientes com pin na posição do texto.
-- [ ] Leitura da escala do carimbo (busca "1:50", "ESC.", etc.).
+- [x] Leitura da escala do carimbo (busca "1:50", "ESC.", etc.).
 - [ ] (Opcional, requer chave de API) fallback com visão IA: rasteriza a
       prancha e envia à API Claude para plantas escaneadas/sem texto.
 
 ### Fase 4 — Polimento / PWA — ~2-3 dias
-- [ ] Manifest + service worker (padrão do repo), ícones.
-- [ ] Atalhos de teclado, undo/redo de medições.
-- [ ] Multiplicador "Qtd." para ambientes repetidos.
+- [x] Manifest + service worker (padrão do repo), ícones.
+- [x] Atalhos de teclado, undo/redo de medições.
+- [x] Multiplicador "Qtd." para ambientes repetidos.
 
 ---
 

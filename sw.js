@@ -1,6 +1,17 @@
 // Service Worker — Dimensionamento de Saneamento
-const CACHE = 'saneamento-v7';
+const CACHE = 'saneamento-v8';
 const ASSETS = [
+  './levantamento/',
+  './levantamento/index.html',
+  './levantamento/css/levantamento.css',
+  './levantamento/js/app.js',
+  './levantamento/js/store.js',
+  './levantamento/js/calc.js',
+  './levantamento/js/viewer.js',
+  './levantamento/js/deteccao.js',
+  './levantamento/js/tabela.js',
+  './levantamento/vendor/pdf.min.mjs',
+  './levantamento/vendor/pdf.worker.min.mjs',
   './',
   './index.html',
   './manifest.json',

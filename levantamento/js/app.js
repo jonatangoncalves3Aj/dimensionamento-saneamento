@@ -3,7 +3,7 @@
 import {
   state, uid, novoProjeto, novaPrancha, novoAmbiente,
   pranchaAtual, ambienteSel, salvar, carregarProjeto,
-  salvarPdf, apagarPdf,
+  salvarPdf, limparPdfsOrfaos, iniciarHistorico, desfazer, refazer,
 } from './store.js';
 import {
   renderizar, ajustar, pontoDoEvento, desenharOverlay,
@@ -20,6 +20,8 @@ const overlay = $('overlay');
 
 state.projeto = carregarProjeto() || novoProjeto();
 if (state.projeto.pranchas.length) state.pranchaAtualId = state.projeto.pranchas[0].id;
+iniciarHistorico();
+limparPdfsOrfaos(state.projeto.pranchas.map(p => p.id)).catch(() => {});
 
 atualizarTudo();
 
@@ -43,12 +45,11 @@ function renderAbas() {
     fechar.className = 'fechar';
     fechar.innerHTML = '&times;';
     fechar.title = 'Fechar prancha';
-    fechar.addEventListener('click', async (e) => {
+    fechar.addEventListener('click', (e) => {
       e.stopPropagation();
       if (!confirm(`Remover a prancha "${p.pavimento}" e suas medições?`)) return;
       state.projeto.pranchas = state.projeto.pranchas.filter(x => x.id !== p.id);
       esquecerPagina(p.id);
-      await apagarPdf(p.id).catch(() => {});
       if (state.pranchaAtualId === p.id) state.pranchaAtualId = state.projeto.pranchas[0]?.id || null;
       salvar(); atualizarTudo();
     });
@@ -251,9 +252,43 @@ function cancelarDesenho(redesenhar = true) {
   if (redesenhar) desenharOverlay();
 }
 
+function digitando(e) {
+  return ['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName) ||
+    document.querySelector('dialog[open]');
+}
+
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') { setTool(null); }
-  if (e.key === 'Enter' && state.desenho) finalizarDesenho();
+  if (e.key === 'Escape') { setTool(null); return; }
+  if (e.key === 'Enter' && state.desenho && !digitando(e)) { finalizarDesenho(); return; }
+
+  // Desfazer / refazer
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !digitando(e)) {
+    e.preventDefault();
+    const ok = e.shiftKey ? refazer() : desfazer();
+    if (ok) { setTool(null); atualizarTudo(); }
+    return;
+  }
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y' && !digitando(e)) {
+    e.preventDefault();
+    if (refazer()) { setTool(null); atualizarTudo(); }
+    return;
+  }
+
+  if (digitando(e) || e.ctrlKey || e.metaKey || e.altKey) return;
+
+  // Atalhos de uma tecla
+  const atalhos = {
+    '1': 'lado', '2': 'perimetro', '3': 'linear', '4': 'contagem',
+    'a': 'ambiente', 'c': 'calibrar',
+  };
+  const k = e.key.toLowerCase();
+  if (atalhos[k]) {
+    document.querySelector(`[data-tool="${atalhos[k]}"]`)?.click();
+  } else if (k === '+' || k === '=') setZoom(state.zoom * 1.25);
+  else if (k === '-') setZoom(state.zoom / 1.25);
+  else if (k === '0') { ajustar(); setZoom(state.zoom); }
+  else if (k === 'n') $('btn-nomes').click();
+  else if (k === 't') trocarVista(state.view === 'planta' ? 'tabela' : 'planta');
 });
 
 overlay.addEventListener('dblclick', (e) => {
@@ -262,6 +297,24 @@ overlay.addEventListener('dblclick', (e) => {
     finalizarDesenho();
   }
 });
+
+/* Arrastar para navegar (pan) quando nenhuma ferramenta está ativa */
+const vpEl = $('viewport');
+let pan = null; // { x, y, sl, st }
+
+vpEl.addEventListener('pointerdown', (e) => {
+  if (state.tool || e.target.closest('[data-ambiente]') || e.button !== 0) return;
+  pan = { x: e.clientX, y: e.clientY, sl: vpEl.scrollLeft, st: vpEl.scrollTop };
+  vpEl.style.cursor = 'grabbing';
+});
+vpEl.addEventListener('pointermove', (e) => {
+  if (!pan) return;
+  vpEl.scrollLeft = pan.sl - (e.clientX - pan.x);
+  vpEl.scrollTop = pan.st - (e.clientY - pan.y);
+});
+const fimPan = () => { pan = null; vpEl.style.cursor = ''; };
+vpEl.addEventListener('pointerup', fimPan);
+vpEl.addEventListener('pointerleave', fimPan);
 
 /* Clique / arraste no overlay */
 let arrasto = null; // { ambiente, dx, dy, moveu }

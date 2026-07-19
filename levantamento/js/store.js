@@ -50,9 +50,54 @@ export function ambienteSel() {
   return p.ambientes.find(a => a.id === state.ambienteSelId) || null;
 }
 
+/* ---------- Histórico (desfazer/refazer) ---------- */
+
+const LIMITE_HISTORICO = 50;
+const pilhaDesfazer = [];
+const pilhaRefazer = [];
+let fotoAtual = null; // JSON do último estado salvo
+
+export function iniciarHistorico() {
+  fotoAtual = JSON.stringify(state.projeto);
+}
+
 export function salvar() {
-  try { localStorage.setItem(CHAVE, JSON.stringify(state.projeto)); }
-  catch (e) { console.warn('Falha ao salvar projeto', e); }
+  try {
+    const json = JSON.stringify(state.projeto);
+    if (json !== fotoAtual) {
+      if (fotoAtual !== null) {
+        pilhaDesfazer.push(fotoAtual);
+        if (pilhaDesfazer.length > LIMITE_HISTORICO) pilhaDesfazer.shift();
+        pilhaRefazer.length = 0;
+      }
+      fotoAtual = json;
+    }
+    localStorage.setItem(CHAVE, json);
+  } catch (e) { console.warn('Falha ao salvar projeto', e); }
+}
+
+function restaurar(json) {
+  state.projeto = JSON.parse(json);
+  fotoAtual = json;
+  try { localStorage.setItem(CHAVE, json); } catch { /* segue */ }
+  if (!state.projeto.pranchas.some(p => p.id === state.pranchaAtualId)) {
+    state.pranchaAtualId = state.projeto.pranchas[0]?.id || null;
+  }
+  state.ambienteSelId = null;
+}
+
+export function desfazer() {
+  if (!pilhaDesfazer.length) return false;
+  pilhaRefazer.push(fotoAtual);
+  restaurar(pilhaDesfazer.pop());
+  return true;
+}
+
+export function refazer() {
+  if (!pilhaRefazer.length) return false;
+  pilhaDesfazer.push(fotoAtual);
+  restaurar(pilhaRefazer.pop());
+  return true;
 }
 
 export function carregarProjeto() {
@@ -89,3 +134,13 @@ async function opPdf(modo, fn) {
 export const salvarPdf = (id, buf) => opPdf('readwrite', s => s.put(buf, id));
 export const lerPdf = (id) => opPdf('readonly', s => s.get(id));
 export const apagarPdf = (id) => opPdf('readwrite', s => s.delete(id));
+
+// PDFs sem prancha correspondente (ex.: prancha removida na sessão anterior —
+// a remoção não apaga na hora para o desfazer continuar funcionando)
+export async function limparPdfsOrfaos(idsValidos) {
+  const chaves = await opPdf('readonly', s => s.getAllKeys());
+  const validos = new Set(idsValidos);
+  for (const k of chaves) {
+    if (!validos.has(k)) await apagarPdf(k).catch(() => {});
+  }
+}
