@@ -15,6 +15,7 @@ const viewport = document.getElementById('viewport');
 const SVG = 'http://www.w3.org/2000/svg';
 const cachePaginas = new Map(); // pranchaId -> { page, largura, altura }
 let tokenRender = 0;
+let tarefaRender = null; // render em andamento do pdf.js (para cancelar)
 
 export async function obterPagina(prancha) {
   if (cachePaginas.has(prancha.id)) return cachePaginas.get(prancha.id);
@@ -51,13 +52,27 @@ export async function renderizar() {
   const { page, largura, altura } = await obterPagina(prancha);
   if (meuToken !== tokenRender) return;
 
+  if (tarefaRender) {
+    tarefaRender.cancel();
+    await tarefaRender.promise.catch(() => {});
+    if (meuToken !== tokenRender) return;
+  }
+
   const escala = state.zoom * (window.devicePixelRatio || 1);
   const vp = page.getViewport({ scale: escala });
   canvas.width = vp.width;
   canvas.height = vp.height;
   canvas.style.width = `${largura * state.zoom}px`;
   canvas.style.height = `${altura * state.zoom}px`;
-  await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+  tarefaRender = page.render({ canvasContext: canvas.getContext('2d'), viewport: vp });
+  try {
+    await tarefaRender.promise;
+  } catch (e) {
+    if (e?.name === 'RenderingCancelledException') return;
+    throw e;
+  } finally {
+    tarefaRender = null;
+  }
   if (meuToken !== tokenRender) return;
 
   overlay.setAttribute('viewBox', `0 0 ${largura} ${altura}`);
