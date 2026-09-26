@@ -1,0 +1,31 @@
+{
+  "nome": "Seu Nome",
+  "cargo_atual": "Engenheiro(a) Civil — Saneamento",
+  "headline_atual": "Engenheiro Civil",
+  "sobre_atual": "Engenheiro civil com experiência em projetos de saneamento.",
+  "experiencias": [
+    "Projetos de redes de água e esgoto para municípios de pequeno e médio porte",
+    "Dimensionamento hidráulico de ETEs e estações elevatórias",
+    "Desenvolvimento de ferramenta web para dimensionamento de saneamento"
+  ],
+  "competencias": ["Saneamento", "Hidráulica", "AutoCAD", "EPANET", "Gestão de obras"],
+  "publico_alvo": "Prefeituras, concessionárias de saneamento, construtoras e engenheiros em início de carreira",
+  "objetivos": [
+    "Ser reconhecido como referência técnica em saneamento",
+    "Atrair oportunidades de consultoria e projetos"
+  ],
+  "pilares_conteudo": [
+    "Dicas técnicas de dimensionamento (NBRs, boas práticas)",
+    "Bastidores de obras e projetos",
+    "Marco Legal do Saneamento e universalização",
+    "Carreira e aprendizados na engenharia"
+  ],
+  "tom_de_voz": "Profissional, didático e próximo; frases curtas; sem jargões desnecessários; sem exageros ou promessas",
+  "evitar": [
+    "Emojis em excesso",
+    "Clickbait",
+    "Citar clientes ou dados de projetos sem autorização",
+    "Afirmações técnicas sem base normativa"
+  ],
+  "idioma": "pt-BR"
+}
