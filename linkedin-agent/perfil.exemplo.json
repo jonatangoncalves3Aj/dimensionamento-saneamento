@@ -1,0 +1,62 @@
+{
+  "nome": "Seu Nome",
+  "cargo_atual": "Engenheiro(a) Civil — Saneamento",
+  "headline_atual": "Engenheiro Civil",
+  "sobre_atual": "Engenheiro civil com experiência em projetos de saneamento.",
+  "experiencias": [
+    "Projetos de redes de água e esgoto para municípios de pequeno e médio porte",
+    "Dimensionamento hidráulico de ETEs e estações elevatórias",
+    "Desenvolvimento de ferramenta web para dimensionamento de saneamento"
+  ],
+  "competencias": [
+    "Saneamento",
+    "Hidráulica",
+    "AutoCAD",
+    "EPANET",
+    "Gestão de obras"
+  ],
+  "publico_alvo": "Prefeituras, concessionárias de saneamento, construtoras e engenheiros em início de carreira",
+  "problema_que_resolvo": "Projetos de saneamento que atrasam ou são reprovados por erros de dimensionamento",
+  "resultado_que_entrego": "Projetos de água e esgoto aprovados de primeira e dentro das normas",
+  "oferta": "Consultoria e elaboração de projetos de redes de água, esgoto e ETEs",
+  "diferencial": "Une experiência de campo com ferramentas próprias de dimensionamento",
+  "concorrentes": [
+    "Escritórios de projeto regionais",
+    "Engenheiros consultores autônomos"
+  ],
+  "objetivos": [
+    "Ser reconhecido como referência técnica em saneamento",
+    "Atrair oportunidades de consultoria e projetos"
+  ],
+  "metricas": {
+    "seguidores": 0,
+    "conexoes": 0,
+    "posts_por_semana": 0,
+    "media_impressoes_por_post": 0,
+    "visitas_ao_perfil_90_dias": 0,
+    "formatos_usados": [
+      "texto"
+    ],
+    "melhores_posts": [
+      "Descreva o tema e o resultado dos seus 3 melhores posts"
+    ],
+    "piores_posts": [
+      "Descreva o tema e o resultado dos seus 3 piores posts"
+    ],
+    "horas_por_semana_para_conteudo": 2
+  },
+  "pilares_conteudo": [
+    "Dicas técnicas de dimensionamento (NBRs, boas práticas)",
+    "Bastidores de obras e projetos",
+    "Marco Legal do Saneamento e universalização",
+    "Carreira e aprendizados na engenharia"
+  ],
+  "tom_de_voz": "Profissional, didático e próximo; frases curtas; sem jargões desnecessários; sem exageros ou promessas",
+  "evitar": [
+    "Emojis em excesso",
+    "Clickbait",
+    "Citar clientes ou dados de projetos sem autorização",
+    "Afirmações técnicas sem base normativa"
+  ],
+  "idioma": "pt-BR"
+}

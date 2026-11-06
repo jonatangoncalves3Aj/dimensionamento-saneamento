@@ -1,0 +1,8 @@
+# Dados pessoais e credenciais — nunca versionar
+.env
+.tokens.json
+perfil.json
+rascunhos/
+saidas/
+__pycache__/
+*.pyc
