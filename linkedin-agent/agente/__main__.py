@@ -44,33 +44,52 @@ def cmd_auth(_):
     print(f"Autenticado como {token.get('nome') or token['pessoa_urn']}. Token salvo em .tokens.json")
 
 
-def cmd_perfil(_):
-    a = _ia().analisar_perfil()
-    md = [f"# Auditoria do perfil — nota {a.nota_geral}/100", "", a.diagnostico, "", "## Headlines sugeridas"]
-    md += [f"{i}. {h}" for i, h in enumerate(a.headlines_sugeridas, 1)]
-    md += ["", "## Sobre (sugestão)", "", a.sobre_sugerido, "", "## Competências prioritárias"]
-    md += [f"- {c}" for c in a.competencias_prioritarias]
-    md += ["", "## Palavras-chave para busca", ", ".join(a.palavras_chave_seo), "", "## Melhorias (por prioridade)"]
-    md += [f"{i}. {m}" for i, m in enumerate(a.melhorias, 1)]
-    texto = "\n".join(md)
+def _relatorio(nome: str, texto: str) -> None:
     print(texto)
-    print(f"\nSalvo em {_salvar_saida('auditoria-perfil', texto)}")
+    print(f"\nSalvo em {_salvar_saida(nome, texto)}")
+
+
+def cmd_diagnostico(_):
+    from . import relatorios
+    _relatorio("diagnostico", relatorios.diagnostico(_ia().diagnosticar()))
     print("Obs.: a API do LinkedIn não permite editar o perfil; aplique as mudanças manualmente.")
 
 
+def cmd_posicionamento(_):
+    from . import relatorios
+    _relatorio("posicionamento", relatorios.posicionamento(_ia().posicionar()))
+    print("Dica: atualize 'cargo_atual', 'diferencial' e 'pilares_conteudo' no perfil.json com o novo "
+          "posicionamento para que os próximos posts já saiam alinhados.")
+
+
 def cmd_calendario(args):
+    from . import relatorios
     inicio = args.inicio or date.today().isoformat()
-    c = _ia().gerar_calendario(inicio, args.semanas, args.por_semana)
-    md = ["# Calendário editorial", "", c.estrategia, "", "| Data | Pilar | Tema | Formato | Objetivo |", "|---|---|---|---|---|"]
-    md += [f"| {i.data} | {i.pilar} | {i.tema} | {i.formato} | {i.objetivo} |" for i in c.itens]
-    texto = "\n".join(md)
-    print(texto)
-    print(f"\nSalvo em {_salvar_saida('calendario', texto)}")
-    print('Gere cada post com: python -m agente post --tema "<tema>"')
+    _relatorio("calendario", relatorios.calendario(_ia().gerar_calendario(inicio, args.dias, args.por_semana)))
+    print('Próximo passo: python -m agente ganchos --tema "<tema>"  ou  python -m agente post --tema "<tema>" --gancho "<gancho>"')
+
+
+def cmd_ganchos(args):
+    from . import relatorios
+    _relatorio("ganchos", relatorios.ganchos(_ia().gerar_ganchos(args.tema, args.formato, args.objetivo)))
+    print('Use o campeão com: python -m agente roteiro --tema "<tema>" --gancho "<gancho>"')
+
+
+def cmd_roteiro(args):
+    from . import relatorios
+    r = _ia().gerar_roteiro(args.tema, args.gancho or "", args.formato, args.tamanho or "")
+    _relatorio("roteiro", relatorios.roteiro(r, args.tema, args.formato))
+    tags = [h.lstrip("#") for h in r.hashtags]
+    for rotulo, texto in [("versão enxuta", r.versao_final_enxuta), ("versão direta", r.versao_mais_direta)]:
+        rd = rascunhos.criar(args.tema, texto, tags, f"{args.formato} · {rotulo}")
+        print(f"Rascunho [{rd['id']}] salvo ({rotulo}).")
+    if args.formato != "texto":
+        print("O rascunho é a legenda. Monte o carrossel/vídeo a partir do roteiro e publique a mídia "
+              "manualmente; o agente publica apenas posts de texto.")
 
 
 def cmd_post(args):
-    p = _ia().gerar_post(args.tema, args.contexto or "", args.variacoes)
+    p = _ia().gerar_post(args.tema, args.contexto or "", args.variacoes, args.gancho or "")
     for v in p.variacoes:
         r = rascunhos.criar(args.tema, v.texto, [h.lstrip("#") for h in v.hashtags], v.formato)
         _mostrar(r)
@@ -170,18 +189,36 @@ def main(argv=None):
     sub = ap.add_subparsers(dest="comando", required=True)
 
     sub.add_parser("auth", help="Conecta sua conta do LinkedIn (OAuth oficial)").set_defaults(f=cmd_auth)
-    sub.add_parser("perfil", help="Audita o perfil e sugere headline, Sobre e melhorias").set_defaults(f=cmd_perfil)
+    sub.add_parser("diagnostico", aliases=["perfil"],
+                   help="Diagnóstico priorizado do perfil e dos vazamentos do funil").set_defaults(f=cmd_diagnostico)
+    sub.add_parser("posicionamento",
+                   help="Reconstrói o posicionamento (territórios, headline, Sobre, Destaques)").set_defaults(f=cmd_posicionamento)
 
-    s = sub.add_parser("calendario", help="Gera um calendário editorial")
+    s = sub.add_parser("calendario", help="Central de conteúdo: cada post com função estratégica")
     s.add_argument("--inicio", help="Data inicial AAAA-MM-DD (padrão: hoje)")
-    s.add_argument("--semanas", type=int, default=4)
-    s.add_argument("--por-semana", type=int, default=2)
+    s.add_argument("--dias", type=int, default=30)
+    s.add_argument("--por-semana", type=int, default=3)
     s.set_defaults(f=cmd_calendario)
+
+    s = sub.add_parser("ganchos", help="Cirurgião de ganchos: 30 aberturas avaliadas e um campeão")
+    s.add_argument("--tema", required=True)
+    s.add_argument("--formato", default="texto", choices=["texto", "carrossel", "video"])
+    s.add_argument("--objetivo", default="autoridade",
+                   help="alcance, seguidores, autoridade, conversas ou oportunidades")
+    s.set_defaults(f=cmd_ganchos)
+
+    s = sub.add_parser("roteiro", help="Roteiro de retenção para texto, carrossel ou vídeo")
+    s.add_argument("--tema", required=True)
+    s.add_argument("--gancho", help="Gancho escolhido (ex.: o campeão do comando ganchos)")
+    s.add_argument("--formato", default="texto", choices=["texto", "carrossel", "video"])
+    s.add_argument("--tamanho", help='Ex.: "8 slides" ou "60 segundos"')
+    s.set_defaults(f=cmd_roteiro)
 
     s = sub.add_parser("post", help="Gera variações de post e salva como rascunhos")
     s.add_argument("--tema", required=True)
     s.add_argument("--contexto", help="Fatos, números ou história real para embasar o post")
     s.add_argument("--variacoes", type=int, default=3)
+    s.add_argument("--gancho", help="Gancho que deve abrir o post")
     s.set_defaults(f=cmd_post)
 
     s = sub.add_parser("listar", help="Lista rascunhos")

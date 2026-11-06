@@ -6,9 +6,12 @@ Agente de linha de comando que usa o **Claude** para cuidar da sua presença no 
 
 | Comando | Função |
 |---|---|
-| `perfil` | Audita o perfil: nota, 5 opções de headline, texto "Sobre", competências, palavras-chave e melhorias priorizadas |
-| `calendario` | Monta um calendário editorial com base nos seus pilares de conteúdo |
-| `post` | Gera variações de post em formatos diferentes e salva como rascunhos |
+| `diagnostico` | Auditoria priorizada (CRÍTICO / ALTO IMPACTO / OTIMIZAÇÃO / IGNORAR), os 5 maiores vazamentos do funil, plano de 7 dias e a mudança de maior impacto |
+| `posicionamento` | Mapeia as mensagens saturadas do nicho, avalia 7 territórios e entrega frase de posicionamento, headline, "Sobre", CTA e posts para Destaques |
+| `calendario` | Central de conteúdo: proporção alcance/autoridade/relacionamento/conversão e, para cada post, função, ângulo, gancho, motor, CTA e métrica |
+| `ganchos` | Cirurgião de ganchos: 30 aberturas com notas em 5 critérios, eliminação abaixo de 38/50, 5 vencedores e um campeão |
+| `roteiro` | Roteiro de retenção (gancho → tensão → … → CTA) para texto, carrossel em PDF ou vídeo; salva o texto final como rascunho |
+| `post` | Gera variações de post em formatos diferentes (opcionalmente com `--gancho`) e salva como rascunhos |
 | `listar` / `ver` / `descartar` | Gerencia os rascunhos |
 | `aprovar` | Aprova um rascunho, com opção de agendar data e hora |
 | `publicar` | Publica agora um rascunho aprovado (`--simular` para testar) |
@@ -44,11 +47,26 @@ Crie uma chave em <https://platform.claude.com> e coloque em `ANTHROPIC_API_KEY`
 4. Copie o Client ID e o Client Secret para o `.env`.
 5. Rode `python -m agente auth` e autorize no navegador. O token vale cerca de 60 dias; depois disso, rode o comando de novo.
 
+## Fluxo estratégico
+
+Os comandos estratégicos seguem cinco frameworks de crescimento orgânico adaptados ao LinkedIn. Rode na ordem:
+
+```bash
+python -m agente diagnostico        # 1. o que está travando alcance, conexões e oportunidades
+python -m agente posicionamento     # 2. nova headline, "Sobre" e ideia central do perfil
+python -m agente calendario --dias 30 --por-semana 3   # 3. 30 dias em que cada post tem função
+python -m agente ganchos --tema "Erros em redes de esgoto" --formato carrossel --objetivo autoridade   # 4.
+python -m agente roteiro --tema "Erros em redes de esgoto" --formato carrossel --tamanho "8 slides" \
+  --gancho "<o campeão do passo 4>"                    # 5. roteiro slide a slide + legenda
+```
+
+Quanto mais completos `metricas`, `oferta`, `diferencial` e `concorrentes` no `perfil.json`, mais preciso o diagnóstico. Quando falta um dado, o agente diz qual é e como coletá-lo, em vez de supor.
+
+Os relatórios são salvos em `saidas/` como Markdown. O agente publica só posts de texto: carrosséis e vídeos você monta a partir do roteiro (no Canva, por exemplo) e publica manualmente, usando a legenda gerada.
+
 ## Uso no dia a dia
 
 ```bash
-python -m agente perfil                                   # auditoria do perfil
-python -m agente calendario --semanas 4 --por-semana 2    # planejamento do mês
 
 python -m agente post --tema "Erros comuns no dimensionamento de redes de esgoto" \
   --contexto "Revisei 12 projetos este ano; o erro mais frequente foi ..."
@@ -61,7 +79,7 @@ python -m agente publicar 3f9a1c2b                         # publica agora
 python -m agente responder --id 3f9a1c2b --comentario "Qual NBR você usa para isso?"
 ```
 
-Os rascunhos ficam em `rascunhos/*.json`. Se quiser ajustar o texto antes de aprovar, edite o JSON direto. Os relatórios (auditoria e calendário) vão para `saidas/`.
+Os rascunhos ficam em `rascunhos/*.json`. Se quiser ajustar o texto antes de aprovar, edite o JSON direto.
 
 ### Publicação automática agendada
 Aprove com `--agendar` e deixe um cron chamando o agente, por exemplo a cada 30 minutos:
